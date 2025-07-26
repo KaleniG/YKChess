@@ -1,0 +1,6 @@
+[submodule "Deps/YKLib"]
+	path = Deps/YKLib
+	url = https://github.com/KaleniG/YKLib.git
+[submodule "Deps/glfw"]
+	path = Deps/glfw
+	url = https://github.com/KaleniG/glfw-premake.git
