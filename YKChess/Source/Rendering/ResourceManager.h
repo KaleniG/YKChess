@@ -2,9 +2,10 @@
 
 namespace yk
 {
-  class Renderer
+  class ResourceManager
   {
   public:
 
+  private:
   };
 }

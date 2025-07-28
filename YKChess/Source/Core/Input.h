@@ -2,20 +2,23 @@
 
 #include <glm/glm.hpp>
 
-#include "VulkanRenderer/Core/MouseCodes.h"
-#include "VulkanRenderer/Core/KeyCodes.h"
-#include "VulkanRenderer/Core/Base.h"
+#include "Core/MouseCodes.h"
+#include "Core/KeyCodes.h"
 
-namespace vkren
+namespace yk
 {
-
   class Input
   {
   public:
     static bool IsKeyPressed(KeyCode key);
     static bool IsMouseButtonPressed(MouseCode button);
-    static glm::vec2 GetMousePos();
-    Input& operator=(const Input&) = delete;
-  };
+    static glm::vec2 GetMousePosition();
 
+  private:
+    Input() = delete;
+    Input(const Input&) = delete;
+    Input& operator=(const Input&) = delete;
+    Input(Input&&) = delete;
+    Input& operator=(Input&&) = delete;
+  };
 }

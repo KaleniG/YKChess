@@ -15,7 +15,6 @@ workspace "YKChess"
 
   platforms 
   { 
-    "Win32",
     "Win64"
   }
 
@@ -25,12 +24,6 @@ workspace "YKChess"
   }
 
   -- platform filters
-  filter { "platforms:Win32" }
-    system "Windows"
-    architecture "x86"
-    systemversion "latest"
-    defines { "PLATFORM_WINDOWS", "ARCH_X86", "_CRT_SECURE_NO_WARNINGS", "_SCL_SECURE_NO_WARNINGS", "NOMINMAX" }
-
   filter { "platforms:Win64" }
     system "Windows"
     architecture "x64"
@@ -61,6 +54,7 @@ workspace "YKChess"
 group "Deps"
   include "Deps/YKLib/YKLib"
   include "Deps/glfw"
+  include "Deps/imgui"
 group ""
 
 group "Impl"

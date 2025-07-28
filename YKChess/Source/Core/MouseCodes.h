@@ -1,8 +1,10 @@
 #pragma once
 
-namespace vkren
+#include <cstdint>
+
+namespace yk
 {
-	using MouseCode = uint16_t;
+	using MouseCode = int32_t;
 
 	namespace Mouse
 	{

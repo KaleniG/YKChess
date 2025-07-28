@@ -21,14 +21,16 @@ project "YKChess"
     "Source",
     "%{wks.location}/Deps/YKLib/YKLib/Source",
     "%{VULKAN_SDK}/Include",
-    "%{wks.location}/Deps/glfw/include"
+    "%{wks.location}/Deps/glfw/include",
+    "%{wks.location}/Deps/imgui"
   }
 
   links
   {
     "YKLib",
     "vulkan-1.lib",
-    "GLFW"
+    "GLFW",
+    "imgui"
   }
 
   libdirs

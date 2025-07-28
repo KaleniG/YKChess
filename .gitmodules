@@ -4,3 +4,6 @@
 [submodule "Deps/glfw"]
 	path = Deps/glfw
 	url = https://github.com/KaleniG/glfw-premake.git
+[submodule "Deps/imgui"]
+	path = Deps/imgui
+	url = https://github.com/KaleniG/imgui-premake.git

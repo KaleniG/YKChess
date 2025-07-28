@@ -1,20 +1,47 @@
-#include <vulkan/vulkan.hpp>
+#include <chrono>
 
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
+#include "Core/WindowManager.h"
+#include "Core/EventManager.h"
+#include "Core/Timestep.h"
 
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <glm/vec4.hpp>
-#include <glm/mat4x4.hpp>
+namespace yk
+{
+  class ChessGame : public yk::EventManager
+  {
+  public:
+    void Run()
+    {
+      while (m_IsRunning)
+      {
+        yk::Timestep timestep = ChessGame::CalculateTimestep();
+        yk::WindowManager::UpdateWindow(timestep);
+      }
+    }
 
-#include <YKLib.h>
+    void OnWindowClose() final
+    {
+      m_IsRunning = false;
+    }
 
-#include "Core/Window.h"
-#include "Core/Renderer.h"
-#include "Core/Input.h"
+    yk::Timestep CalculateTimestep()
+    {
+      static auto lastTime = std::chrono::high_resolution_clock::now();
+      auto currentTime = std::chrono::high_resolution_clock::now();
+      float time = std::chrono::duration<float>(currentTime - lastTime).count();
+      lastTime = currentTime;
+      return { time };
+    }
+
+  private:
+    bool m_IsRunning = true;
+    bool m_IsMinimized = false;
+  };
+}
 
 int main() 
 {
-
+  yk::WindowManager::InitWindow(1280, 720, "YK Chess");
+  yk::ChessGame game;
+  game.Run();
+  yk::WindowManager::Shutdown();
 }

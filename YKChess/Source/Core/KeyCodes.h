@@ -1,8 +1,10 @@
 #pragma once
 
-namespace vkren
+#include <cstdint>
+
+namespace yk
 {
-  using KeyCode = uint16_t;
+  using KeyCode = int32_t;
 
   namespace Key
   {
