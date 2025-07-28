@@ -13,6 +13,7 @@ project "YKChess"
   {
     "Source/**.cpp",
     "Source/**.h",
+    "Source/**.inl",
     "premake5.lua"
   }
 

@@ -8,6 +8,7 @@
 #include "Core/EventManager.h"
 #include "Core/Timestep.h"
 #include "Core/Input.h"
+#include "Rendering/Device.h"
 
 namespace yk
 {
@@ -23,6 +24,7 @@ namespace yk
     static void SetWindowTitle(const std::string& title);
     static glm::uvec2 GetWindowSize();
     static void SetWindowSize(glm::uvec2 size);
+    static glm::uvec2 GetFramebufferSize();
 
     static bool IsInitialized();
 
@@ -43,6 +45,7 @@ namespace yk
 
   private:
     friend class EventManager;
+    friend class Device;
     friend class Input;
   };
 

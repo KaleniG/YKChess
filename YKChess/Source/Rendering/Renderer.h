@@ -2,10 +2,12 @@
 
 #include <memory>
 
-#include <vulkan/vulkan.hpp>
+#include <vulkan/vulkan.h>
 #include <glm/glm.hpp>
 
 #include "Rendering/DebugOverlayManager.h"
+#include "Rendering/ResourceManager.h"
+#include "Rendering/Device.h"
 
 namespace yk
 {
@@ -23,6 +25,10 @@ namespace yk
 
     static void RenderBatch();
 
+    static bool IsInitialized();
+
+    static std::shared_ptr<Device> GetDevice();
+
   private:
     static Renderer& Get() { static Renderer instance; return instance; }
     Renderer() = default;
@@ -34,27 +40,10 @@ namespace yk
   private:
     bool s_Initialized = false;
 
-    vk::Instance s_VulkanInstance;
-    vk::DebugUtilsMessengerEXT m_DebugMessenger;
-    vk::SurfaceKHR m_Surface;
-    vk::PhysicalDevice m_PhysicalDevice;
-    vk::Device m_LogicalDevice;
-
-    uint32_t m_GraphicsQueueFamilyIndex;
-    vk::Queue m_GraphicsQueue;
-    uint32_t m_PresentQueueFamilyIndex;
-    vk::Queue m_PresentQueue;
-
-    vk::Format m_DepthAttachmentFormat;
-
-    vk::CommandPool m_CommandPool;
-
-    vk::PhysicalDeviceMemoryProperties m_PhysicalDeviceMemoryProperties;
-    vk::PhysicalDeviceProperties m_PhysicalDeviceProperties;
-
-    vk::SampleCountFlagBits m_MaxSampleCount;
+    std::shared_ptr<Device> s_Device;
 
   private:
     friend class DebugOverlayManager;
+    friend class ResourceManager;
   };
 }

@@ -67,6 +67,13 @@ namespace yk
     glfwSetWindowSize(WindowManager::GetWindow(), size.x, size.y);
   }
 
+  glm::uvec2 WindowManager::GetFramebufferSize()
+  {
+    int32_t width, height;
+    glfwGetFramebufferSize(WindowManager::GetWindow(), &width, &height);
+    return { width, height };
+  }
+
   bool WindowManager::IsInitialized()
   {
     return WindowManager::Get().s_Initialized;
