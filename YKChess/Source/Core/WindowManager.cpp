@@ -43,6 +43,11 @@ namespace yk
 		glfwPollEvents();
   }
 
+  void WindowManager::WaitEvents()
+  {
+    glfwWaitEvents();
+  }
+
   const std::string& WindowManager::GetWindowTitle()
   {
 		YK_ASSERT(WindowManager::IsInitialized(), "A window hasn't been initialized");

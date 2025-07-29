@@ -23,7 +23,9 @@ project "YKChess"
     "%{wks.location}/Deps/YKLib/YKLib/Source",
     "%{VULKAN_SDK}/Include",
     "%{wks.location}/Deps/glfw/include",
-    "%{wks.location}/Deps/imgui"
+    "%{wks.location}/Deps/imgui",
+    "%{wks.location}/Deps/Boost/pfr/include",
+    "%{wks.location}/Deps/stb"
   }
 
   links

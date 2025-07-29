@@ -9,3 +9,10 @@
 # Binaries
 **/Bin/
 **/Bin-Int/
+**.spv
+
+# ImGui
+**/imgui.ini
+
+# Cache
+**.pcache

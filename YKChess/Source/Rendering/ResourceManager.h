@@ -5,7 +5,6 @@ namespace yk
   class ResourceManager
   {
   public:
-
   private:
   };
 }

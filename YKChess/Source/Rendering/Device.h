@@ -12,7 +12,6 @@ namespace yk
   class Device
   {
   public:
-    Device();
     ~Device();
 
     void WaitIdle();
@@ -38,6 +37,8 @@ namespace yk
 
     VkCommandBuffer GetSingleTimeCommandBuffer();
     void SubmitSingleTimeCommandBuffer(VkCommandBuffer command_buffer);
+
+    static std::shared_ptr<Device> Create();
 
   private:
     void CreateVulkanInstance();

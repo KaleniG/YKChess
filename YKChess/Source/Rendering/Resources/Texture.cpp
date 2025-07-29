@@ -1,6 +1,7 @@
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
 
-
-#include <stb/stb_image.h>
+#include <YKLib.h>
 
 #include "Rendering/Resources/StagingBuffer.h"
 #include "Rendering/Resources/Texture.h"

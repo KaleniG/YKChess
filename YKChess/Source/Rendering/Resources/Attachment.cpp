@@ -12,7 +12,7 @@ namespace yk
 
   std::shared_ptr<Attachment> Attachment::Create(const VkFormat& format, const AttachmentTypeFlags type, const VkExtent2D& extent, const VkComponentMapping& view_component_mapping, uint32_t layer_count, uint32_t mipmap_levels, bool copiable, const VkSampleCountFlagBits& sample_count)
   {
-    std::shared_ptr<Attachment> attachment = std::shared_ptr<Attachment>();
+    std::shared_ptr<Attachment> attachment = std::make_shared<Attachment>();
 
     attachment->CreateAttachment(format, type, extent, layer_count, mipmap_levels, copiable, sample_count);
     attachment->CreateImageView(view_component_mapping);

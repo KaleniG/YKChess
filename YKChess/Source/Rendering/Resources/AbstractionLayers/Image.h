@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include "Rendering/Resources/AbstractionLayers/Resource.h"
 
 namespace yk

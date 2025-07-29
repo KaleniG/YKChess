@@ -10,7 +10,7 @@ namespace yk
     stagingBuffer.Update((void*)vertices.data());
     stagingBuffer.Unmap();
 
-    Ref<VertexBuffer> buffer = VertexBuffer::Create(bufferSize);
+    std::shared_ptr<VertexBuffer> buffer = VertexBuffer::Create(bufferSize);
     stagingBuffer.CopyToBuffer(*buffer.get());
 
     return buffer;

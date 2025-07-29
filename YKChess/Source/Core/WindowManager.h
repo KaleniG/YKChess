@@ -8,6 +8,7 @@
 #include "Core/EventManager.h"
 #include "Core/Timestep.h"
 #include "Core/Input.h"
+#include "Rendering/DebugOverlayManager.h"
 #include "Rendering/Device.h"
 
 namespace yk
@@ -19,6 +20,7 @@ namespace yk
     static void Shutdown();
 
     static void UpdateWindow(Timestep timestep);
+    static void WaitEvents();
 
     static const std::string& GetWindowTitle();
     static void SetWindowTitle(const std::string& title);
@@ -44,6 +46,7 @@ namespace yk
     bool s_Initialized = false;
 
   private:
+    friend class DebugOverlayManager;
     friend class EventManager;
     friend class Device;
     friend class Input;

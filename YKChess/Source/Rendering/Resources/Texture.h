@@ -1,5 +1,8 @@
 #pragma once
 
+#include <filesystem>
+#include <memory>
+
 #include "Rendering/Resources/SampledImage.h"
 
 namespace yk

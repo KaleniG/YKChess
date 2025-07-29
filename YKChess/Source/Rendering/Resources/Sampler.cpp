@@ -13,7 +13,7 @@ namespace yk
   std::shared_ptr<Sampler> Sampler::Create(const SamplerCreateInfo& info)
   {
     YK_ASSERT(info.ImageFormat != VK_FORMAT_UNDEFINED, "Vulkan/System:  Specify a format");
-    std::shared_ptr<Sampler> sampler = std::shared_ptr<Sampler>();
+    std::shared_ptr<Sampler> sampler = std::make_shared<Sampler>();
 
     VkSamplerCreateInfo samplerCreateInfo = {};
     samplerCreateInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;

@@ -7,3 +7,9 @@
 [submodule "Deps/imgui"]
 	path = Deps/imgui
 	url = https://github.com/KaleniG/imgui-premake.git
+[submodule "Deps/Boost/pfr"]
+	path = Deps/Boost/pfr
+	url = https://github.com/boostorg/pfr.git
+[submodule "Deps/stb"]
+	path = Deps/stb
+	url = https://github.com/nothings/stb.git

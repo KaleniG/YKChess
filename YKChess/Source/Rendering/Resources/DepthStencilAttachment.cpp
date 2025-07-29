@@ -9,7 +9,7 @@ namespace yk
 
   std::shared_ptr<DepthStencilAttachment> DepthStencilAttachment::Create(const VkFormat& format, const VkExtent2D& extent, const VkComponentMapping& view_component_mapping, bool copiable, const VkSampleCountFlagBits& sample_count)
   {
-    std::shared_ptr<DepthStencilAttachment> attachment = std::shared_ptr<DepthStencilAttachment>();
+    std::shared_ptr<DepthStencilAttachment> attachment = std::make_shared<DepthStencilAttachment>();
 
     attachment->CreateAttachment(format, YK_ATTACHMENT_TYPE_DEPTH_STENCIL_BIT, extent, 1, 1, copiable, sample_count);
     attachment->CreateImageView(view_component_mapping);

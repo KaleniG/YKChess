@@ -103,16 +103,6 @@ namespace yk
 
   static DeviceReqs* s_DeviceReqs = new DeviceReqs;
 
-  Device::Device()
-  {
-    Device::CreateVulkanInstance();
-    Device::CreateDebugMessenger();
-    Device::CreateSurface();
-    Device::ChoosePhysicalDevice();
-    Device::CreateLogicalDevice();
-    Device::CreateCommandSystem();
-  }
-
   Device::~Device()
   {
     vkDestroyCommandPool(m_LogicalDevice, m_CommandPool, VK_NULL_HANDLE);
@@ -527,5 +517,19 @@ namespace yk
     YK_ASSERT(result == VK_SUCCESS, "Vulkan: failed to wait for queue idle. Error: {}", Utils::VkResultToString(result));
 
     vkFreeCommandBuffers(m_LogicalDevice, m_CommandPool, 1, &commandBuffer);
+  }
+
+  std::shared_ptr<Device> Device::Create()
+  {
+    std::shared_ptr<Device> device = std::make_shared<Device>();
+
+    device->CreateVulkanInstance();
+    device->CreateDebugMessenger();
+    device->CreateSurface();
+    device->ChoosePhysicalDevice();
+    device->CreateLogicalDevice();
+    device->CreateCommandSystem();
+
+    return device;
   }
 }
