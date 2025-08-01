@@ -1,9 +1,11 @@
 #include <chrono>
+#include <memory>
 
 #include "Core/WindowManager.h"
 #include "Core/EventManager.h"
 #include "Core/Timestep.h"
 #include "Rendering/DebugOverlayManager.h"
+#include "Rendering/ImageResource.h"
 #include "Rendering/Renderer.h"
 
 namespace yk
@@ -14,26 +16,103 @@ namespace yk
     ChessGame()
     {
       yk::DebugOverlayManager::Init();
+
+      m_ChessAtlas = ImageResource::Create("Assets/Textures/ChessAtlas.png", 24, 24);
+      Renderer::SetImageSlot(1, m_ChessAtlas);
+
+      Renderer::DrawImage(glm::vec2(-0.7f, -0.7f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(1));
+      Renderer::DrawImage(glm::vec2(-0.5f, -0.7f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(0));
+      Renderer::DrawImage(glm::vec2(-0.3f, -0.7f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(1));
+      Renderer::DrawImage(glm::vec2(-0.1f, -0.7f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(0));
+      Renderer::DrawImage(glm::vec2(0.1f, -0.7f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(1));
+      Renderer::DrawImage(glm::vec2(0.3f, -0.7f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(0));
+      Renderer::DrawImage(glm::vec2(0.5f, -0.7f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(1));
+      Renderer::DrawImage(glm::vec2(0.7f, -0.7f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(0));
+
+      Renderer::DrawImage(glm::vec2(-0.7f, -0.5f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(0));
+      Renderer::DrawImage(glm::vec2(-0.5f, -0.5f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(1));
+      Renderer::DrawImage(glm::vec2(-0.3f, -0.5f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(0));
+      Renderer::DrawImage(glm::vec2(-0.1f, -0.5f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(1));
+      Renderer::DrawImage(glm::vec2(0.1f, -0.5f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(0));
+      Renderer::DrawImage(glm::vec2(0.3f, -0.5f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(1));
+      Renderer::DrawImage(glm::vec2(0.5f, -0.5f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(0));
+      Renderer::DrawImage(glm::vec2(0.7f, -0.5f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(1));
+
+      Renderer::DrawImage(glm::vec2(-0.7f, -0.3f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(1));
+      Renderer::DrawImage(glm::vec2(-0.5f, -0.3f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(0));
+      Renderer::DrawImage(glm::vec2(-0.3f, -0.3f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(1));
+      Renderer::DrawImage(glm::vec2(-0.1f, -0.3f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(0));
+      Renderer::DrawImage(glm::vec2(0.1f, -0.3f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(1));
+      Renderer::DrawImage(glm::vec2(0.3f, -0.3f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(0));
+      Renderer::DrawImage(glm::vec2(0.5f, -0.3f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(1));
+      Renderer::DrawImage(glm::vec2(0.7f, -0.3f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(0));
+
+      Renderer::DrawImage(glm::vec2(-0.7f, -0.1f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(0));
+      Renderer::DrawImage(glm::vec2(-0.5f, -0.1f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(1));
+      Renderer::DrawImage(glm::vec2(-0.3f, -0.1f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(0));
+      Renderer::DrawImage(glm::vec2(-0.1f, -0.1f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(1));
+      Renderer::DrawImage(glm::vec2(0.1f, -0.1f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(0));
+      Renderer::DrawImage(glm::vec2(0.3f, -0.1f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(1));
+      Renderer::DrawImage(glm::vec2(0.5f, -0.1f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(0));
+      Renderer::DrawImage(glm::vec2(0.7f, -0.1f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(1));
+
+      Renderer::DrawImage(glm::vec2(-0.7f, 0.1f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(1));
+      Renderer::DrawImage(glm::vec2(-0.5f, 0.1f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(0));
+      Renderer::DrawImage(glm::vec2(-0.3f, 0.1f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(1));
+      Renderer::DrawImage(glm::vec2(-0.1f, 0.1f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(0));
+      Renderer::DrawImage(glm::vec2(0.1f, 0.1f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(1));
+      Renderer::DrawImage(glm::vec2(0.3f, 0.1f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(0));
+      Renderer::DrawImage(glm::vec2(0.5f, 0.1f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(1));
+      Renderer::DrawImage(glm::vec2(0.7f, 0.1f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(0));
+
+      Renderer::DrawImage(glm::vec2(-0.7f, 0.3f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(0));
+      Renderer::DrawImage(glm::vec2(-0.5f, 0.3f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(1));
+      Renderer::DrawImage(glm::vec2(-0.3f, 0.3f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(0));
+      Renderer::DrawImage(glm::vec2(-0.1f, 0.3f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(1));
+      Renderer::DrawImage(glm::vec2(0.1f, 0.3f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(0));
+      Renderer::DrawImage(glm::vec2(0.3f, 0.3f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(1));
+      Renderer::DrawImage(glm::vec2(0.5f, 0.3f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(0));
+      Renderer::DrawImage(glm::vec2(0.7f, 0.3f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(1));
+
+      Renderer::DrawImage(glm::vec2(-0.7f, 0.5f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(1));
+      Renderer::DrawImage(glm::vec2(-0.5f, 0.5f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(0));
+      Renderer::DrawImage(glm::vec2(-0.3f, 0.5f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(1));
+      Renderer::DrawImage(glm::vec2(-0.1f, 0.5f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(0));
+      Renderer::DrawImage(glm::vec2(0.1f, 0.5f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(1));
+      Renderer::DrawImage(glm::vec2(0.3f, 0.5f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(0));
+      Renderer::DrawImage(glm::vec2(0.5f, 0.5f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(1));
+      Renderer::DrawImage(glm::vec2(0.7f, 0.5f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(0));
+
+      Renderer::DrawImage(glm::vec2(-0.7f, 0.7f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(0));
+      Renderer::DrawImage(glm::vec2(-0.5f, 0.7f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(1));
+      Renderer::DrawImage(glm::vec2(-0.3f, 0.7f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(0));
+      Renderer::DrawImage(glm::vec2(-0.1f, 0.7f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(1));
+      Renderer::DrawImage(glm::vec2(0.1f, 0.7f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(0));
+      Renderer::DrawImage(glm::vec2(0.3f, 0.7f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(1));
+      Renderer::DrawImage(glm::vec2(0.5f, 0.7f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(0));
+      Renderer::DrawImage(glm::vec2(0.7f, 0.7f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(1));
+
+      Renderer::EndBatch();
     }
 
     void Run()
     {
       while (m_IsRunning)
       {
-        yk::Timestep timestep = ChessGame::CalculateTimestep();
+        Timestep timestep = ChessGame::CalculateTimestep();
 
         if (!m_IsMinimized)
         {
-          yk::DebugOverlayManager::Start();
+          DebugOverlayManager::Start();
 
           ChessGame::Update(timestep);
 
-          yk::Renderer::Render();
+          Renderer::Render();
         }
 
-        yk::WindowManager::UpdateWindow(timestep);
+        WindowManager::UpdateWindow(timestep);
       }
-      yk::Renderer::WaitIdle();
+      Renderer::WaitIdle();
     }
 
     void Update(Timestep timestep)
@@ -63,6 +142,8 @@ namespace yk
   private:
     bool m_IsRunning = true;
     bool m_IsMinimized = false;
+
+    std::shared_ptr<ImageResource> m_ChessAtlas;
   };
 }
 
@@ -71,7 +152,6 @@ int main()
   yk::WindowManager::InitWindow(1280, 720, "YK Chess");
   yk::Renderer::Init();
   
-
   yk::ChessGame game;
   game.Run();
 

@@ -22,6 +22,7 @@
 #include "Rendering/Resources/Texture.h"
 #include "Rendering/DebugOverlayManager.h"
 #include "Rendering/ResourceManager.h"
+#include "Rendering/ImageResource.h"
 #include "Rendering/Swapchain.h"
 #include "Rendering/Device.h"
 
@@ -40,7 +41,10 @@ namespace yk
 
     static void WaitIdle();
 
-    static void DrawImage(glm::vec2 position, glm::vec2 size, std::shared_ptr<ImageResource> image);
+    static void SetImageSlot(uint32_t slot, std::shared_ptr<ImageResource> image);
+    static void DrawImage(glm::vec2 position, glm::vec2 size, uint32_t slot, SubTexture subtexture);
+    static void EndBatch();
+    static void ResetBatch();
     static void DrawText(const std::string& text, glm::vec2 size, glm::vec2 position, glm::vec4 color, std::shared_ptr<FontResource> font);
 
     static void Render();
@@ -90,7 +94,10 @@ namespace yk
     std::shared_ptr<GraphicsPipeline> s_Pipeline;
     std::shared_ptr<PipelineLayout> s_PipelineLayout;
 
-    Texture s_ChessAtlas;
+    std::vector<float> s_VertexBatchVector;
+    std::vector<uint32_t> s_IndexBatchVector;
+    uint32_t s_ObjectCount = 0;
+
 
   private:
     friend class DebugOverlayManager;

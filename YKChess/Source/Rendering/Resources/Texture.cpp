@@ -9,17 +9,20 @@
 namespace yk
 {
 
-  Texture Texture::Create(const std::filesystem::path& filepath, const std::shared_ptr<Sampler> sampler)
+  std::shared_ptr<Texture> Texture::Create(const std::filesystem::path& filepath, const std::shared_ptr<Sampler> sampler)
   {
     YK_ASSERT(filepath.extension().string() == ".png", "System:  Only '.png' image format supported for now");
 
-    Texture texture;
+    std::shared_ptr<Texture> texture = std::make_shared<Texture>();
 
-    texture.m_Filepath = filepath;
+    texture->m_Filepath = filepath;
 
     int32_t width, height, channelsCount;
-    stbi_uc* pixels = stbi_load(texture.m_Filepath.string().c_str(), &width, &height, &channelsCount, STBI_rgb_alpha);
+    stbi_uc* pixels = stbi_load(texture->m_Filepath.string().c_str(), &width, &height, &channelsCount, STBI_rgb_alpha);
     YK_ASSERT(pixels, "[STB] Failed to load the image");
+
+    texture->m_Width = width;
+    texture->m_Height = height;
 
     VkDeviceSize imageSize = width * height * 4;
 
@@ -39,13 +42,13 @@ namespace yk
     else
       createInfo.Sampler.SamplerCreateInfo.ImageFormat = VK_FORMAT_R8G8B8A8_SRGB;
 
-    texture.m_Image = SampledImage::Create(createInfo);
+    texture->m_Image = SampledImage::Create(createInfo);
 
-    stagingBuffer.CopyToImage(*texture.m_Image.get());
+    stagingBuffer.CopyToImage(*texture->m_Image.get());
 
     ImageTransitionSpecifics specifics;
     specifics.PipelineStagesMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-    texture.GetImage()->Transition(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, specifics);
+    texture->GetImage()->Transition(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, specifics);
 
     return texture;
   }

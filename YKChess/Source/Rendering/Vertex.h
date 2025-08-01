@@ -10,16 +10,16 @@ namespace yk
 
   struct alignas(16) UniformBufferObject
   {
+    glm::mat4 Projection;
     glm::vec2 MousePosition;
   };
 
   struct alignas(16) Vertex
   {
-    glm::vec3 Position;
-    glm::vec3 Color;
+    glm::vec2 Position;
     glm::vec2 TextureCoord;
 
-    bool operator==(const Vertex& other) const { return Position == other.Position && Color == other.Color && TextureCoord == other.TextureCoord; }
+    bool operator==(const Vertex& other) const { return Position == other.Position && TextureCoord == other.TextureCoord; }
   };
 
 }
@@ -32,7 +32,6 @@ namespace std
     {
       size_t seed = 0;
       hash_combine(seed, vertex.Position);
-      hash_combine(seed, vertex.Color);
       hash_combine(seed, vertex.TextureCoord);
       return seed;
     }

@@ -1,5 +1,6 @@
 #include "YKLib.h"
 
+#include "Core/WindowManager.h"
 #include "Core/Input.h"
 #include "Rendering/DebugOverlayManager.h"
 #include "Rendering/Renderer.h"
@@ -69,27 +70,36 @@ namespace yk
 
       PipelineVertexInputState pInputState;
       pInputState.AddBinding(0, sizeof(Vertex), InputRate::Vertex);
-      pInputState.AddAttribute(0, VertexInputFormat::VEC3, offsetof(Vertex, Position));
-      pInputState.AddAttribute(1, VertexInputFormat::VEC3, offsetof(Vertex, Color));
-      pInputState.AddAttribute(2, VertexInputFormat::VEC2, offsetof(Vertex, TextureCoord));
+      pInputState.AddAttribute(0, VertexInputFormat::VEC2, offsetof(Vertex, Position));
+      //pInputState.AddAttribute(1, VertexInputFormat::VEC3, offsetof(Vertex, Color));
+      pInputState.AddAttribute(1, VertexInputFormat::VEC2, offsetof(Vertex, TextureCoord));
 
       PipelineInputAssemblyState pInputAssembly(InputPrimitiveTopology::TriangleList);
 
       PipelineViewportScissorState pViewportScissorState;
 
-      PipelineRasterizationState pRasterizationState(true, false, PolygonMode::Fill, CullMode::Back, FrontFace::CounterClockwise);
+      PipelineRasterizationState pRasterizationState(true, false, PolygonMode::Fill, CullMode::Back, FrontFace::Clockwise);
 
       PipelineMultisampleState pMultisampleState(MultisampleCount::_1, false);
 
       DepthTestInfo depthTestInfo;
-      depthTestInfo.EnableWrite = true;
+      depthTestInfo.EnableWrite = false;
       depthTestInfo.CompareOp = CompareOp::Less;
       depthTestInfo.EnableBoundsTest = false;
 
       PipelineDepthStencilState pDepthStencilState(depthTestInfo);
 
       PipelineColorBlendAttachments colorBlendAttachments;
-      colorBlendAttachments.AddAttachmentState();
+      colorBlendAttachments.AddAttachmentState
+      (
+        VK_BLEND_FACTOR_SRC_ALPHA,
+        VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
+        VK_BLEND_OP_ADD,
+        VK_BLEND_FACTOR_ONE,
+        VK_BLEND_FACTOR_ZERO,
+        VK_BLEND_OP_ADD,
+        VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT
+      );
 
       PipelineColorBlendState pColorBlendingState(colorBlendAttachments);
 
@@ -117,33 +127,13 @@ namespace yk
     for (std::shared_ptr<MUniformBuffer>& ub : Renderer::Get().s_UniformBuffers)
       ub = MUniformBuffer::Create(sizeof(UniformBufferObject));
 
-    Renderer::Get().s_ChessAtlas = Texture::Create("Assets/Textures/ChessAtlas.png");
-
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
     {
       DescriptorSetUpdateData basicPipelineUpdateData = {};
       basicPipelineUpdateData.Write(0, Renderer::Get().s_UniformBuffers[i]);
-      basicPipelineUpdateData.Write(1, Renderer::Get().s_ChessAtlas.GetImage());
 
       Renderer::Get().s_PipelineDescriptorSets[i]->Update(basicPipelineUpdateData);
     }
-
-    std::vector<float> vertices = 
-    {
-    -0.5f, -0.5f,
-     0.5f, -0.5f,
-     0.5f,  0.5f,
-    -0.5f,  0.5f
-    };
-
-    std::vector<uint32_t> indices =
-    {
-    0, 1, 2,
-    2, 3, 0
-    };
-
-    Renderer::Get().s_VertexBuffer = VertexBuffer::Create(vertices);
-    Renderer::Get().s_IndexBuffer = IndexBuffer::Create(indices);
   }
 
   void Renderer::Shutdown()
@@ -157,9 +147,73 @@ namespace yk
     Renderer::Get().s_Device->WaitIdle();
   }
 
-  void Renderer::DrawImage(glm::vec2 position, glm::vec2 size, std::shared_ptr<ImageResource> image)
+  void Renderer::SetImageSlot(uint32_t slot, std::shared_ptr<ImageResource> image)
+  {
+    Renderer::WaitIdle();
+
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+    {
+      DescriptorSetUpdateData basicPipelineUpdateData = {};
+      basicPipelineUpdateData.Write(0, Renderer::Get().s_UniformBuffers[i]);
+      basicPipelineUpdateData.Write(1, image->GetTexture()->GetImage());
+
+      Renderer::Get().s_PipelineDescriptorSets[i]->Update(basicPipelineUpdateData);
+    }
+  }
+
+  void Renderer::DrawImage(glm::vec2 position, glm::vec2 size, uint32_t slot, SubTexture subtexture)
   {
     YK_ASSERT(Renderer::IsInitialized(), "The renderer hasn't been initialized yet");
+
+    Renderer::Get().s_ObjectCount++;
+
+    std::array<glm::vec2, 4> vertices =
+    {
+       glm::vec2(-0.5f, -0.5f),
+       glm::vec2(0.5f, -0.5f),
+       glm::vec2(0.5f, 0.5f),
+       glm::vec2(-0.5f, 0.5f)
+    };
+
+    for (int i = 0; i < 4; i++)
+    {
+      vertices[i] = vertices[i] * size + position;
+      Renderer::Get().s_VertexBatchVector.reserve(4);
+      Renderer::Get().s_VertexBatchVector.emplace_back(vertices[i].x);
+      Renderer::Get().s_VertexBatchVector.emplace_back(vertices[i].y);
+      Renderer::Get().s_VertexBatchVector.emplace_back(subtexture.UVCoordinates[i].x);
+      Renderer::Get().s_VertexBatchVector.emplace_back(subtexture.UVCoordinates[i].y);
+    }
+
+    std::array<uint32_t, 6> indices =
+    {
+    0, 1, 2,
+    2, 3, 0
+    };
+
+    for (int i = 0; i < 6; i++)
+    {
+      Renderer::Get().s_VertexBatchVector.reserve(6);
+      Renderer::Get().s_IndexBatchVector.emplace_back(indices[i] + (4 * (Renderer::Get().s_ObjectCount - 1)));
+    }
+  }
+
+  void Renderer::EndBatch()
+  {
+    YK_ASSERT(Renderer::IsInitialized(), "The renderer hasn't been initialized yet");
+    Renderer::Get().s_VertexBuffer = VertexBuffer::Create(Renderer::Get().s_VertexBatchVector);
+    Renderer::Get().s_IndexBuffer = IndexBuffer::Create(Renderer::Get().s_IndexBatchVector);
+  }
+
+  void Renderer::ResetBatch()
+  {
+    YK_ASSERT(Renderer::IsInitialized(), "The renderer hasn't been initialized yet");
+
+    Renderer::Get().s_VertexBuffer.reset();
+    Renderer::Get().s_VertexBatchVector.clear();
+    Renderer::Get().s_IndexBuffer.reset();
+    Renderer::Get().s_IndexBatchVector.clear();
+    Renderer::Get().s_ObjectCount = 0;
   }
 
   void Renderer::DrawText(const std::string& text, glm::vec2 size, glm::vec2 position, glm::vec4 color, std::shared_ptr<FontResource> font)
@@ -182,7 +236,11 @@ namespace yk
 
     Renderer::Get().s_InFlightFences[Renderer::Get().s_CurrentFrame]->Reset();
 
+    float aspect = static_cast<float>(WindowManager::GetWindowSize().x) / static_cast<float>(WindowManager::GetWindowSize().y);
+    glm::mat4 projection = glm::ortho(-aspect, aspect, -1.0f, 1.0f, -1.0f, 1.0f);
+
     UniformBufferObject ubo;
+    ubo.Projection = projection;
     ubo.MousePosition = Input::GetMousePosition();
 
     Renderer::Get().s_UniformBuffers[Renderer::Get().s_CurrentFrame]->Update(&ubo);
@@ -197,7 +255,7 @@ namespace yk
     YK_ASSERT(result == VK_SUCCESS, "[VULKAN] Failed to begin recording command buffer. Error: {}", Utils::VkResultToString(result));
 
     std::array<VkClearValue, 2> clearValues{};
-    clearValues[0].color = { {0.0f, 0.0f, 0.0f, 1.0f} };
+    clearValues[0].color = { {0.5f, 0.5f, 0.5f, 1.0f} };
     clearValues[1].depthStencil = { 1.0f, 0 };
 
     VkRenderPassBeginInfo renderPassBeginInfo{};
