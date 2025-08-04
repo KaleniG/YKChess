@@ -200,14 +200,15 @@ namespace yk
 
   void Renderer::EndBatch()
   {
-    YK_ASSERT(Renderer::IsInitialized(), "The renderer hasn't been initialized yet");
+    Renderer::WaitIdle();
+
     Renderer::Get().s_VertexBuffer = VertexBuffer::Create(Renderer::Get().s_VertexBatchVector);
     Renderer::Get().s_IndexBuffer = IndexBuffer::Create(Renderer::Get().s_IndexBatchVector);
   }
 
   void Renderer::ResetBatch()
   {
-    YK_ASSERT(Renderer::IsInitialized(), "The renderer hasn't been initialized yet");
+    Renderer::WaitIdle();
 
     Renderer::Get().s_VertexBuffer.reset();
     Renderer::Get().s_VertexBatchVector.clear();
