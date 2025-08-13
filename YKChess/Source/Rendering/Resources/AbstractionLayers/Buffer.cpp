@@ -42,8 +42,6 @@ namespace yk
 
     m_CurrentAccessMask = new_access;
     m_CurrentPipelineStageMask = dstStages;
-
-    YK_INFO("System: buffer '{}' transitioned", (int)m_Buffer);
   }
 
   void Buffer::CopyToBuffer(Buffer& dst_buffer, const BufferToBufferCopySpecifics& specifics)
@@ -94,8 +92,6 @@ namespace yk
     dst_buffer.m_Used = true;
     dst_buffer.m_CurrentAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
     dst_buffer.m_CurrentPipelineStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT;
-
-    YK_INFO("System: buffer '{}' copied to buffer '{}'", (int)m_Buffer, (int)dst_buffer.Get());
   }
 
   void Buffer::CopyToBuffer(Buffer& dst_buffer, const VkBufferCopy& copy_region)
@@ -150,8 +146,6 @@ namespace yk
     m_Used = true;
     m_CurrentAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
     m_CurrentPipelineStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT;
-
-    YK_INFO("System: buffer '{}' copied to image '{}'", (int)m_Buffer, (int)dst_image.m_Image);
   }
 
   void Buffer::CopyToImage(Image& dst_image, const VkBufferImageCopy& copy_data, bool gen_mipmaps)

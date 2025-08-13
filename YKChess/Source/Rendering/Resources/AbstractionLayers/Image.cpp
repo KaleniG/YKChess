@@ -217,8 +217,6 @@ namespace yk
     m_CurrentLayout = new_layout;
     m_CurrentAccessMask = barrier.dstAccessMask;
     m_CurrentPipelineStageMask = dstStages;
-
-    YK_INFO("System: image '{}' transitioned", (int)m_Image);
   }
 
   void Image::CopyToImage(Image& dst_image, const ImageToImageCopySpecifics& specifics)
@@ -269,8 +267,6 @@ namespace yk
       vkCmdCopyImage(commandBuffer, m_Image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dst_image.m_Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
     }
     Renderer::GetDevice()->SubmitSingleTimeCommandBuffer(commandBuffer);
-
-    YK_INFO("System: image '{}' copied to image '{}'", (int)m_Image, (int)dst_image.m_Image);
   }
 
   void Image::CopyToImage(Image& dst_image, const VkImageCopy& copy_region, bool gen_mipmaps)
@@ -323,8 +319,6 @@ namespace yk
       vkCmdCopyImageToBuffer(commandBuffer, m_Image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dst_buffer.m_Buffer, 1, &region);
     }
     Renderer::GetDevice()->SubmitSingleTimeCommandBuffer(commandBuffer);
-
-    YK_INFO("System: image '{}' copied to buffer '{}'", (int)m_Image, (int)dst_buffer.m_Buffer);
   }
 
   void Image::CopyToBuffer(Buffer& dst_buffer, const VkBufferImageCopy& copy_data)

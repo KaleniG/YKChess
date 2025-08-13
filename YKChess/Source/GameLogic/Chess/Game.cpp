@@ -103,20 +103,8 @@ namespace yk
       {
         if (m_Turn == Side::White)
         {
-          if (tile_pos.y == 6)
-          {
-            if (tile_pos.y - 2 >= 0)
-              if (!m_Board[tile_pos.x][tile_pos.y - 2].has_value())
-                tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x, tile_pos.y - 2));
-
-            if (tile_pos.x + 1 < 8 && tile_pos.y - 2 >= 0)
-              if (m_Board[tile_pos.x + 1][tile_pos.y - 2].has_value() && m_Board[tile_pos.x + 1][tile_pos.y - 2]->GetSide() != m_Turn)
-                tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x + 1, tile_pos.y - 2));
-
-            if (tile_pos.x - 1 >= 0 && tile_pos.y - 2 >= 0)
-              if (m_Board[tile_pos.x - 1][tile_pos.y - 2].has_value() && m_Board[tile_pos.x - 1][tile_pos.y - 2]->GetSide() != m_Turn)
-                tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x - 1, tile_pos.y - 2));
-          }
+          if (tile_pos.y == 6 && tile_pos.y - 2 >= 0 && !m_Board[tile_pos.x][tile_pos.y - 1].has_value() && !m_Board[tile_pos.x][tile_pos.y - 2].has_value())
+            tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x, tile_pos.y - 2));
 
           if (tile_pos.y - 1 >= 0)
             if (!m_Board[tile_pos.x][tile_pos.y - 1].has_value())
@@ -132,31 +120,19 @@ namespace yk
         }
         else
         {
-          if (tile_pos.y == 1)
-          {
-            if (tile_pos.y + 2 < 8)
-              if (!m_Board[tile_pos.x][tile_pos.y + 2].has_value())
-                tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x, tile_pos.y + 2));
-
-            if (tile_pos.x + 1 < 8 && tile_pos.y + 2 < 8)
-              if (m_Board[tile_pos.x + 1][tile_pos.y + 2].has_value())
-                tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x + 1, tile_pos.y + 2));
-
-            if (tile_pos.x - 1 >= 0 && tile_pos.y + 2 < 8)
-              if (m_Board[tile_pos.x - 1][tile_pos.y + 2].has_value())
-                tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x - 1, tile_pos.y + 2));
-          }
+          if (tile_pos.y == 1 && tile_pos.y + 2 < 8 && !m_Board[tile_pos.x][tile_pos.y + 1].has_value() && !m_Board[tile_pos.x][tile_pos.y + 2].has_value())
+            tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x, tile_pos.y + 2));
 
           if (tile_pos.y + 1 < 8)
             if (!m_Board[tile_pos.x][tile_pos.y + 1].has_value())
               tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x, tile_pos.y + 1));
 
           if (tile_pos.x + 1 < 8 && tile_pos.y + 1 < 8)
-            if (m_Board[tile_pos.x + 1][tile_pos.y + 1].has_value())
+            if (m_Board[tile_pos.x + 1][tile_pos.y + 1].has_value() && m_Board[tile_pos.x + 1][tile_pos.y + 1]->GetSide() != m_Turn)
               tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x + 1, tile_pos.y + 1));
 
           if (tile_pos.x - 1 >= 0 && tile_pos.y + 1 < 8)
-            if (m_Board[tile_pos.x - 1][tile_pos.y + 1].has_value())
+            if (m_Board[tile_pos.x - 1][tile_pos.y + 1].has_value() && m_Board[tile_pos.x - 1][tile_pos.y + 1]->GetSide() != m_Turn)
               tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x - 1, tile_pos.y + 1));
         }
         break;
@@ -442,7 +418,7 @@ namespace yk
               tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x + 1, tile_pos.y + 1));
           }
 
-          if (tile_pos.y - 1 >= 8)
+          if (tile_pos.y - 1 >= 0)
           {
             if (m_Board[tile_pos.x + 1][tile_pos.y - 1].has_value() && m_Board[tile_pos.x + 1][tile_pos.y - 1]->GetSide() != m_Turn)
               tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x + 1, tile_pos.y - 1));
