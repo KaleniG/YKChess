@@ -1,3 +1,4 @@
+#include <stb_image.h>
 #include <YKLib.h>
 
 #include "Core/WindowManager.h"
@@ -77,6 +78,38 @@ namespace yk
     int32_t width, height;
     glfwGetFramebufferSize(WindowManager::GetWindow(), &width, &height);
     return { width, height };
+  }
+
+  void WindowManager::SetWindowIcon(const std::vector<std::filesystem::path>& icons)
+  {
+    std::vector<GLFWimage> glfwIcons;
+    glfwIcons.reserve(icons.size());
+
+    std::vector<stbi_uc*> pixelBuffers;
+    pixelBuffers.reserve(icons.size());
+
+    for (const auto& filepath : icons)
+    {
+      YK_ASSERT(filepath.extension() == ".png", "System: Only '.png' image format supported for now");
+
+      int32_t width, height, channelsCount;
+      stbi_uc* pixels = stbi_load(filepath.string().c_str(), &width, &height, &channelsCount, STBI_rgb_alpha);
+      YK_ASSERT(pixels, "Failed to load the image");
+
+      pixelBuffers.push_back(pixels);
+
+      GLFWimage icon;
+      icon.width = width;
+      icon.height = height;
+      icon.pixels = pixels;
+
+      glfwIcons.push_back(icon);
+    }
+
+    glfwSetWindowIcon(WindowManager::GetWindow(), static_cast<int32_t>(glfwIcons.size()), glfwIcons.data());
+
+    for (stbi_uc* pixels : pixelBuffers)
+      stbi_image_free(pixels);
   }
 
   bool WindowManager::IsInitialized()

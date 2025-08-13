@@ -1,5 +1,6 @@
 #pragma once
 
+#include <filesystem>
 #include <string>
 
 #include <GLFW/glfw3.h>
@@ -27,6 +28,7 @@ namespace yk
     static glm::uvec2 GetWindowSize();
     static void SetWindowSize(glm::uvec2 size);
     static glm::uvec2 GetFramebufferSize();
+    static void SetWindowIcon(const std::vector<std::filesystem::path>& icons);
 
     static bool IsInitialized();
 

@@ -5,6 +5,7 @@
 **.vcxproj.filters
 **.vcxproj.user
 **.csproj
+**.aps
 
 # Binaries
 **/Bin/

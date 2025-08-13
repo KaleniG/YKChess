@@ -77,6 +77,13 @@ namespace yk
 int main() 
 {
   yk::WindowManager::InitWindow(1280, 720, "YK Chess");
+  yk::WindowManager::SetWindowIcon
+    ({ 
+    "Assets/Icons/YKChess_x1.png", 
+    "Assets/Icons/YKChess_x2.png", 
+    "Assets/Icons/YKChess_x3.png", 
+    "Assets/Icons/YKChess_x4.png" 
+    });
   yk::Renderer::Init();
   
   yk::ChessGame game;

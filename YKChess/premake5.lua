@@ -14,7 +14,14 @@ project "YKChess"
     "Source/**.cpp",
     "Source/**.h",
     "Source/**.inl",
-    "premake5.lua"
+    "Assets/**.png",
+    "Assets/**.spv",
+    "Assets/**.frag",
+    "Assets/**.vert",
+    "*.lua",
+    "*.pcache",
+    "*.ini",
+    "*.bat"
   }
 
   includedirs
@@ -40,6 +47,9 @@ project "YKChess"
   {
     "%{VULKAN_SDK}/Lib"
   }
+
+  filter { "system:windows" }
+    files { "**.rc", "**.aps", "**.ico", "Assets/**.h" }
 
   filter { "configurations:Debug*" }
     kind "ConsoleApp"
