@@ -66,7 +66,7 @@ namespace yk
     {
       Renderer::DrawImage(glm::vec2(-0.7 + (0.2f * m_CurrentCursorPos.x), -0.7f + (0.2f * m_CurrentCursorPos.y)), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(15));
 
-      TileInfo info = Game::GetTileInfo(m_CurrentCursorPos);
+      TileInfo info = Game::GetTileInfo(m_CurrentCursorPos, false);
 
       for (auto pos : info.PossiblePaths)
       {
@@ -76,7 +76,7 @@ namespace yk
 
     bool Game::SelectCurrentTile()
     {
-      TileInfo info = Game::GetTileInfo(m_CurrentCursorPos);
+      TileInfo info = Game::GetTileInfo(m_CurrentCursorPos, false);
 
       if (!info.TilePiece.has_value() || info.PossiblePaths.empty())
         return false;
@@ -86,12 +86,12 @@ namespace yk
       return true;
     }
 
-    TileInfo Game::GetTileInfo(glm::ivec2 tile_pos) const
+    TileInfo Game::GetTileInfo(glm::ivec2 tile_pos, bool check_test) const
     {
       if (!m_Board[tile_pos.x][tile_pos.y].has_value())
         return {};
 
-      if (m_Board[tile_pos.x][tile_pos.y]->GetSide() != m_Turn)
+      if (m_Board[tile_pos.x][tile_pos.y]->GetSide() != m_Turn && !check_test)
         return {};
 
       TileInfo tileInfo;
@@ -111,11 +111,11 @@ namespace yk
               tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x, tile_pos.y - 1));
 
           if (tile_pos.x + 1 < 8 && tile_pos.y - 1 >= 0)
-            if (m_Board[tile_pos.x + 1][tile_pos.y - 1].has_value() && m_Board[tile_pos.x + 1][tile_pos.y - 1]->GetSide() != m_Turn)
+            if (m_Board[tile_pos.x + 1][tile_pos.y - 1].has_value() && (m_Board[tile_pos.x + 1][tile_pos.y - 1]->GetSide() != m_Turn || check_test))
               tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x + 1, tile_pos.y - 1));
 
           if (tile_pos.x - 1 >= 0 && tile_pos.y - 1 >= 0)
-            if (m_Board[tile_pos.x - 1][tile_pos.y - 1].has_value() && m_Board[tile_pos.x - 1][tile_pos.y - 1]->GetSide() != m_Turn)
+            if (m_Board[tile_pos.x - 1][tile_pos.y - 1].has_value() && (m_Board[tile_pos.x - 1][tile_pos.y - 1]->GetSide() != m_Turn || check_test))
             tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x - 1, tile_pos.y - 1));
         }
         else
@@ -128,11 +128,11 @@ namespace yk
               tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x, tile_pos.y + 1));
 
           if (tile_pos.x + 1 < 8 && tile_pos.y + 1 < 8)
-            if (m_Board[tile_pos.x + 1][tile_pos.y + 1].has_value() && m_Board[tile_pos.x + 1][tile_pos.y + 1]->GetSide() != m_Turn)
+            if (m_Board[tile_pos.x + 1][tile_pos.y + 1].has_value() && (m_Board[tile_pos.x + 1][tile_pos.y + 1]->GetSide() != m_Turn || check_test))
               tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x + 1, tile_pos.y + 1));
 
           if (tile_pos.x - 1 >= 0 && tile_pos.y + 1 < 8)
-            if (m_Board[tile_pos.x - 1][tile_pos.y + 1].has_value() && m_Board[tile_pos.x - 1][tile_pos.y + 1]->GetSide() != m_Turn)
+            if (m_Board[tile_pos.x - 1][tile_pos.y + 1].has_value() && (m_Board[tile_pos.x - 1][tile_pos.y + 1]->GetSide() != m_Turn || check_test))
               tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x - 1, tile_pos.y + 1));
         }
         break;
@@ -143,7 +143,7 @@ namespace yk
         {
           if (m_Board[x][tile_pos.y].has_value())
           {
-            if (m_Board[x][tile_pos.y]->GetSide() != m_Turn)
+            if (m_Board[x][tile_pos.y]->GetSide() != m_Turn || check_test)
               tileInfo.PossiblePaths.push_back(glm::ivec2(x, tile_pos.y));
             break;
           }
@@ -154,7 +154,7 @@ namespace yk
         {
           if (m_Board[x][tile_pos.y].has_value())
           {
-            if (m_Board[x][tile_pos.y]->GetSide() != m_Turn)
+            if (m_Board[x][tile_pos.y]->GetSide() != m_Turn || check_test)
               tileInfo.PossiblePaths.push_back(glm::ivec2(x, tile_pos.y));
             break;
           }
@@ -165,7 +165,7 @@ namespace yk
         {
           if (m_Board[tile_pos.x][y].has_value())
           {
-            if (m_Board[tile_pos.x][y]->GetSide() != m_Turn)
+            if (m_Board[tile_pos.x][y]->GetSide() != m_Turn || check_test)
               tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x, y));
             break;
           }
@@ -176,7 +176,7 @@ namespace yk
         {
           if (m_Board[tile_pos.x][y].has_value())
           {
-            if (m_Board[tile_pos.x][y]->GetSide() != m_Turn)
+            if (m_Board[tile_pos.x][y]->GetSide() != m_Turn || check_test)
               tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x, y));
             break;
           }
@@ -196,7 +196,7 @@ namespace yk
         {
           if (m_Board[tileKnightNextPos.x][tileKnightNextPos.y].has_value())
           {
-            if (m_Board[tileKnightNextPos.x][tileKnightNextPos.y]->GetSide() != m_Turn)
+            if (m_Board[tileKnightNextPos.x][tileKnightNextPos.y]->GetSide() != m_Turn || check_test)
               tileInfo.PossiblePaths.push_back(tileKnightNextPos);
           }
           else
@@ -212,7 +212,7 @@ namespace yk
         {
           if (m_Board[tileKnightNextPos.x][tileKnightNextPos.y].has_value())
           {
-            if (m_Board[tileKnightNextPos.x][tileKnightNextPos.y]->GetSide() != m_Turn)
+            if (m_Board[tileKnightNextPos.x][tileKnightNextPos.y]->GetSide() != m_Turn || check_test)
               tileInfo.PossiblePaths.push_back(tileKnightNextPos);
           }
           else
@@ -228,7 +228,7 @@ namespace yk
         {
           if (m_Board[tileKnightNextPos.x][tileKnightNextPos.y].has_value())
           {
-            if (m_Board[tileKnightNextPos.x][tileKnightNextPos.y]->GetSide() != m_Turn)
+            if (m_Board[tileKnightNextPos.x][tileKnightNextPos.y]->GetSide() != m_Turn || check_test)
               tileInfo.PossiblePaths.push_back(tileKnightNextPos);
           }
           else
@@ -244,7 +244,7 @@ namespace yk
         {
           if (m_Board[tileKnightNextPos.x][tileKnightNextPos.y].has_value())
           {
-            if (m_Board[tileKnightNextPos.x][tileKnightNextPos.y]->GetSide() != m_Turn)
+            if (m_Board[tileKnightNextPos.x][tileKnightNextPos.y]->GetSide() != m_Turn || check_test)
               tileInfo.PossiblePaths.push_back(tileKnightNextPos);
           }
           else
@@ -260,7 +260,7 @@ namespace yk
         {
           if (m_Board[tileKnightNextPos.x][tileKnightNextPos.y].has_value())
           {
-            if (m_Board[tileKnightNextPos.x][tileKnightNextPos.y]->GetSide() != m_Turn)
+            if (m_Board[tileKnightNextPos.x][tileKnightNextPos.y]->GetSide() != m_Turn || check_test)
               tileInfo.PossiblePaths.push_back(tileKnightNextPos);
           }
           else
@@ -276,7 +276,7 @@ namespace yk
         {
           if (m_Board[tileKnightNextPos.x][tileKnightNextPos.y].has_value())
           {
-            if (m_Board[tileKnightNextPos.x][tileKnightNextPos.y]->GetSide() != m_Turn)
+            if (m_Board[tileKnightNextPos.x][tileKnightNextPos.y]->GetSide() != m_Turn || check_test)
               tileInfo.PossiblePaths.push_back(tileKnightNextPos);
           }
           else
@@ -292,7 +292,7 @@ namespace yk
         {
           if (m_Board[tileKnightNextPos.x][tileKnightNextPos.y].has_value())
           {
-            if (m_Board[tileKnightNextPos.x][tileKnightNextPos.y]->GetSide() != m_Turn)
+            if (m_Board[tileKnightNextPos.x][tileKnightNextPos.y]->GetSide() != m_Turn || check_test)
               tileInfo.PossiblePaths.push_back(tileKnightNextPos);
           }
           else
@@ -308,7 +308,7 @@ namespace yk
         {
           if (m_Board[tileKnightNextPos.x][tileKnightNextPos.y].has_value())
           {
-            if (m_Board[tileKnightNextPos.x][tileKnightNextPos.y]->GetSide() != m_Turn)
+            if (m_Board[tileKnightNextPos.x][tileKnightNextPos.y]->GetSide() != m_Turn || check_test)
               tileInfo.PossiblePaths.push_back(tileKnightNextPos);
           }
           else
@@ -328,7 +328,7 @@ namespace yk
         {
           if (m_Board[tileBishopNextPos.x][tileBishopNextPos.y].has_value())
           {
-            if (m_Board[tileBishopNextPos.x][tileBishopNextPos.y]->GetSide() != m_Turn)
+            if (m_Board[tileBishopNextPos.x][tileBishopNextPos.y]->GetSide() != m_Turn || check_test)
               tileInfo.PossiblePaths.push_back(tileBishopNextPos);
             break;
           }
@@ -348,7 +348,7 @@ namespace yk
         {
           if (m_Board[tileBishopNextPos.x][tileBishopNextPos.y].has_value())
           {
-            if (m_Board[tileBishopNextPos.x][tileBishopNextPos.y]->GetSide() != m_Turn)
+            if (m_Board[tileBishopNextPos.x][tileBishopNextPos.y]->GetSide() != m_Turn || check_test)
               tileInfo.PossiblePaths.push_back(tileBishopNextPos);
             break;
           }
@@ -368,7 +368,7 @@ namespace yk
         {
           if (m_Board[tileBishopNextPos.x][tileBishopNextPos.y].has_value())
           {
-            if (m_Board[tileBishopNextPos.x][tileBishopNextPos.y]->GetSide() != m_Turn)
+            if (m_Board[tileBishopNextPos.x][tileBishopNextPos.y]->GetSide() != m_Turn || check_test)
               tileInfo.PossiblePaths.push_back(tileBishopNextPos);
             break;
           }
@@ -388,7 +388,7 @@ namespace yk
         {
           if (m_Board[tileBishopNextPos.x][tileBishopNextPos.y].has_value())
           {
-            if (m_Board[tileBishopNextPos.x][tileBishopNextPos.y]->GetSide() != m_Turn)
+            if (m_Board[tileBishopNextPos.x][tileBishopNextPos.y]->GetSide() != m_Turn || check_test)
               tileInfo.PossiblePaths.push_back(tileBishopNextPos);
             break;
           }
@@ -405,14 +405,14 @@ namespace yk
       {
         if (tile_pos.x + 1 < 8)
         {
-          if (m_Board[tile_pos.x + 1][tile_pos.y].has_value() && m_Board[tile_pos.x + 1][tile_pos.y]->GetSide() != m_Turn)
+          if (m_Board[tile_pos.x + 1][tile_pos.y].has_value() && (m_Board[tile_pos.x + 1][tile_pos.y]->GetSide() != m_Turn || check_test))
             tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x + 1, tile_pos.y));
           else if (!m_Board[tile_pos.x + 1][tile_pos.y].has_value())
             tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x + 1, tile_pos.y));
 
           if (tile_pos.y + 1 < 8)
           {
-            if (m_Board[tile_pos.x + 1][tile_pos.y + 1].has_value() && m_Board[tile_pos.x + 1][tile_pos.y + 1]->GetSide() != m_Turn)
+            if (m_Board[tile_pos.x + 1][tile_pos.y + 1].has_value() && (m_Board[tile_pos.x + 1][tile_pos.y + 1]->GetSide() != m_Turn || check_test))
               tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x + 1, tile_pos.y + 1));
             else if (!m_Board[tile_pos.x + 1][tile_pos.y + 1].has_value())
               tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x + 1, tile_pos.y + 1));
@@ -420,7 +420,7 @@ namespace yk
 
           if (tile_pos.y - 1 >= 0)
           {
-            if (m_Board[tile_pos.x + 1][tile_pos.y - 1].has_value() && m_Board[tile_pos.x + 1][tile_pos.y - 1]->GetSide() != m_Turn)
+            if (m_Board[tile_pos.x + 1][tile_pos.y - 1].has_value() && (m_Board[tile_pos.x + 1][tile_pos.y - 1]->GetSide() != m_Turn || check_test))
               tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x + 1, tile_pos.y - 1));
             else if (!m_Board[tile_pos.x + 1][tile_pos.y - 1].has_value())
               tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x + 1, tile_pos.y - 1));
@@ -428,14 +428,14 @@ namespace yk
         }
         if (tile_pos.x - 1 >= 0)
         {
-          if (m_Board[tile_pos.x - 1][tile_pos.y].has_value() && m_Board[tile_pos.x - 1][tile_pos.y]->GetSide() != m_Turn)
+          if (m_Board[tile_pos.x - 1][tile_pos.y].has_value() && (m_Board[tile_pos.x - 1][tile_pos.y]->GetSide() != m_Turn || check_test))
             tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x - 1, tile_pos.y));
           else if (!m_Board[tile_pos.x - 1][tile_pos.y].has_value())
             tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x - 1, tile_pos.y));
 
           if (tile_pos.y + 1 < 8)
           {
-            if (m_Board[tile_pos.x - 1][tile_pos.y + 1].has_value() && m_Board[tile_pos.x - 1][tile_pos.y + 1]->GetSide() != m_Turn)
+            if (m_Board[tile_pos.x - 1][tile_pos.y + 1].has_value() && (m_Board[tile_pos.x - 1][tile_pos.y + 1]->GetSide() != m_Turn || check_test))
               tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x - 1, tile_pos.y + 1));
             else if (!m_Board[tile_pos.x - 1][tile_pos.y + 1].has_value())
               tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x - 1, tile_pos.y + 1));
@@ -443,7 +443,7 @@ namespace yk
 
           if (tile_pos.y - 1 >= 0)
           {
-            if (m_Board[tile_pos.x - 1][tile_pos.y - 1].has_value() && m_Board[tile_pos.x - 1][tile_pos.y - 1]->GetSide() != m_Turn)
+            if (m_Board[tile_pos.x - 1][tile_pos.y - 1].has_value() && (m_Board[tile_pos.x - 1][tile_pos.y - 1]->GetSide() != m_Turn || check_test))
               tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x - 1, tile_pos.y - 1));
             else if (!m_Board[tile_pos.x - 1][tile_pos.y - 1].has_value())
               tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x - 1, tile_pos.y - 1));
@@ -451,14 +451,14 @@ namespace yk
         }
         if (tile_pos.y + 1 < 8)
         {
-          if (m_Board[tile_pos.x][tile_pos.y + 1].has_value() && m_Board[tile_pos.x][tile_pos.y + 1]->GetSide() != m_Turn)
+          if (m_Board[tile_pos.x][tile_pos.y + 1].has_value() && (m_Board[tile_pos.x][tile_pos.y + 1]->GetSide() != m_Turn || check_test))
             tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x, tile_pos.y + 1));
           else if (!m_Board[tile_pos.x][tile_pos.y + 1].has_value())
             tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x, tile_pos.y + 1));
         }
         if (tile_pos.y - 1 >= 0)
         {
-          if (m_Board[tile_pos.x][tile_pos.y - 1].has_value() && m_Board[tile_pos.x][tile_pos.y - 1]->GetSide() != m_Turn)
+          if (m_Board[tile_pos.x][tile_pos.y - 1].has_value() && (m_Board[tile_pos.x][tile_pos.y - 1]->GetSide() != m_Turn || check_test))
             tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x, tile_pos.y - 1));
           else if (!m_Board[tile_pos.x][tile_pos.y - 1].has_value())
             tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x, tile_pos.y - 1));
@@ -476,7 +476,7 @@ namespace yk
         {
           if (m_Board[tileBishopNextPos.x][tileBishopNextPos.y].has_value())
           {
-            if (m_Board[tileBishopNextPos.x][tileBishopNextPos.y]->GetSide() != m_Turn)
+            if (m_Board[tileBishopNextPos.x][tileBishopNextPos.y]->GetSide() != m_Turn || check_test)
               tileInfo.PossiblePaths.push_back(tileBishopNextPos);
             break;
           }
@@ -496,7 +496,7 @@ namespace yk
         {
           if (m_Board[tileBishopNextPos.x][tileBishopNextPos.y].has_value())
           {
-            if (m_Board[tileBishopNextPos.x][tileBishopNextPos.y]->GetSide() != m_Turn)
+            if (m_Board[tileBishopNextPos.x][tileBishopNextPos.y]->GetSide() != m_Turn || check_test)
               tileInfo.PossiblePaths.push_back(tileBishopNextPos);
             break;
           }
@@ -516,7 +516,7 @@ namespace yk
         {
           if (m_Board[tileBishopNextPos.x][tileBishopNextPos.y].has_value())
           {
-            if (m_Board[tileBishopNextPos.x][tileBishopNextPos.y]->GetSide() != m_Turn)
+            if (m_Board[tileBishopNextPos.x][tileBishopNextPos.y]->GetSide() != m_Turn || check_test)
               tileInfo.PossiblePaths.push_back(tileBishopNextPos);
             break;
           }
@@ -536,7 +536,7 @@ namespace yk
         {
           if (m_Board[tileBishopNextPos.x][tileBishopNextPos.y].has_value())
           {
-            if (m_Board[tileBishopNextPos.x][tileBishopNextPos.y]->GetSide() != m_Turn)
+            if (m_Board[tileBishopNextPos.x][tileBishopNextPos.y]->GetSide() != m_Turn || check_test)
               tileInfo.PossiblePaths.push_back(tileBishopNextPos);
             break;
           }
@@ -551,7 +551,7 @@ namespace yk
         {
           if (m_Board[x][tile_pos.y].has_value())
           {
-            if (m_Board[x][tile_pos.y]->GetSide() != m_Turn)
+            if (m_Board[x][tile_pos.y]->GetSide() != m_Turn || check_test)
               tileInfo.PossiblePaths.push_back(glm::ivec2(x, tile_pos.y));
             break;
           }
@@ -562,7 +562,7 @@ namespace yk
         {
           if (m_Board[x][tile_pos.y].has_value())
           {
-            if (m_Board[x][tile_pos.y]->GetSide() != m_Turn)
+            if (m_Board[x][tile_pos.y]->GetSide() != m_Turn || check_test)
               tileInfo.PossiblePaths.push_back(glm::ivec2(x, tile_pos.y));
             break;
           }
@@ -573,7 +573,7 @@ namespace yk
         {
           if (m_Board[tile_pos.x][y].has_value())
           {
-            if (m_Board[tile_pos.x][y]->GetSide() != m_Turn)
+            if (m_Board[tile_pos.x][y]->GetSide() != m_Turn || check_test)
               tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x, y));
             break;
           }
@@ -584,7 +584,7 @@ namespace yk
         {
           if (m_Board[tile_pos.x][y].has_value())
           {
-            if (m_Board[tile_pos.x][y]->GetSide() != m_Turn)
+            if (m_Board[tile_pos.x][y]->GetSide() != m_Turn || check_test)
               tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x, y));
             break;
           }
@@ -596,6 +596,100 @@ namespace yk
       }
 
       return tileInfo;
+    }
+
+    std::optional<glm::ivec2> Game::FindKing(Side side) const
+    {
+      for (int y = 0; y < 8; y++)
+      {
+        for (int x = 0; x < 8; x++)
+        {
+          const auto& pieceOpt = m_Board[x][y];
+          if (pieceOpt.has_value())
+          {
+            const Piece& piece = *pieceOpt;
+            if (piece.GetSide() == side && piece.GetType() == Piece::Type::King)
+            {
+              return glm::ivec2{ x, y };
+            }
+          }
+        }
+      }
+      return std::nullopt;
+    }
+
+    bool Game::IsSquareAttacked(glm::ivec2 square, Side attacker) const
+    {
+      // Loop through all pieces of the attacker side
+      for (int y = 0; y < 8; y++)
+      {
+        for (int x = 0; x < 8; x++)
+        {
+          auto pieceOpt = m_Board[x][y];
+          if (!pieceOpt.has_value()) continue;
+
+          const Piece& piece = pieceOpt.value();
+          if (piece.GetSide() != attacker) continue;
+
+          // Get pseudo-legal moves for this piece
+          TileInfo info = Game::GetTileInfo({ x, y }, true);
+          for (auto& move : info.PossiblePaths)
+          {
+            if (move == square)
+              return true;
+          }
+        }
+      }
+      return false;
+    }
+
+    bool Game::IsInCheck(Side side) const
+    {
+      std::optional<glm::ivec2> kingPos = Game::FindKing(side);
+
+      if (kingPos == std::nullopt)
+        return false;
+
+      Side opponent = (side == Side::White) ? Side::Black : Side::White;
+      return Game::IsSquareAttacked(kingPos.value(), opponent);
+    }
+
+    bool Game::IsCheckmate(Side side)
+    {
+      if (!Game::IsInCheck(side))
+        return false; // Not in check, so can't be checkmate
+
+      // Try all possible moves
+      for (int y = 0; y < 8; y++)
+      {
+        for (int x = 0; x < 8; x++)
+        {
+          auto pieceOpt = m_Board[x][y];
+          if (!pieceOpt.has_value()) continue;
+
+          const Piece& piece = pieceOpt.value();
+          if (piece.GetSide() != side) continue;
+
+          TileInfo info = Game::GetTileInfo({ x, y }, false);
+          for (auto& move : info.PossiblePaths)
+          {
+            // Copy board to simulate
+            auto backup = m_Board;
+            m_Board[move.x][move.y] = m_Board[x][y];
+            m_Board[x][y].reset();
+
+            bool stillInCheck = Game::IsInCheck(side);
+
+            // Restore board
+            m_Board = backup;
+
+            if (!stillInCheck)
+              return false; // Found a move that avoids check
+          }
+        }
+      }
+
+      return true; // No escape, checkmate
     }
 
     void Game::DrawBoard()
@@ -818,6 +912,12 @@ namespace yk
           Game::DrawPieces();
           Game::HoverCurrentTile();
 
+          if (Game::IsInCheck(m_Turn))
+          {
+            std::optional<glm::ivec2> kingPos = Game::FindKing(m_Turn);
+            Renderer::DrawImage(glm::vec2(-0.7 + (0.2f * kingPos->x), -0.7f + (0.2f * kingPos->y)), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(14));
+          }
+
           Renderer::DrawImage(glm::vec2(-0.7 + (0.2f * m_SelectedTile.PossiblePaths[m_SelectedTileIndex].x), -0.7f + (0.2f * m_SelectedTile.PossiblePaths[m_SelectedTileIndex].y)), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(14));
 
           Renderer::EndBatch();
@@ -849,6 +949,11 @@ namespace yk
         Game::DrawBoard();
         Game::DrawPieces();
         Game::HoverCurrentTile();
+        if (Game::IsInCheck(m_Turn))
+        {
+          std::optional<glm::ivec2> kingPos = Game::FindKing(m_Turn);
+          Renderer::DrawImage(glm::vec2(-0.7 + (0.2f * kingPos->x), -0.7f + (0.2f * kingPos->y)), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(14));
+        }
         Renderer::EndBatch();
         break;
       }
@@ -883,24 +988,57 @@ namespace yk
         }
         else if (key == Key::Enter)
         {
-          m_Board[m_SelectedTile.PossiblePaths[m_SelectedTileIndex].x][m_SelectedTile.PossiblePaths[m_SelectedTileIndex].y] = m_Board[m_CurrentCursorPos.x][m_CurrentCursorPos.y];
-          m_Board[m_CurrentCursorPos.x][m_CurrentCursorPos.y].reset();
+          if (Game::IsInCheck(m_Turn))
+          {
+            auto backup = m_Board;
+            m_Board[m_SelectedTile.PossiblePaths[m_SelectedTileIndex].x][m_SelectedTile.PossiblePaths[m_SelectedTileIndex].y] = m_Board[m_CurrentCursorPos.x][m_CurrentCursorPos.y];
+            m_Board[m_CurrentCursorPos.x][m_CurrentCursorPos.y].reset();
+
+            if (Game::IsInCheck(m_Turn))
+            {
+              m_Board = backup;
+              break;
+            }
+          }
+          else
+          {
+            m_Board[m_SelectedTile.PossiblePaths[m_SelectedTileIndex].x][m_SelectedTile.PossiblePaths[m_SelectedTileIndex].y] = m_Board[m_CurrentCursorPos.x][m_CurrentCursorPos.y];
+            m_Board[m_CurrentCursorPos.x][m_CurrentCursorPos.y].reset();
+          }
+
           m_SelectedTileIndex = 0;
           m_CurrentStatus = Status::Hovering;
           m_Turn = (m_Turn == Side::White) ? Side::Black : Side::White;
           m_CurrentCursorPos = (m_Turn == Side::White) ? glm::ivec2(7, 7) : glm::ivec2(0, 0);
+
+          if (Game::IsCheckmate(m_Turn))
+          {
+            YK_INFO("Game over for side: {}", (m_Turn == Side::White) ? "White" : "Black");
+            break;
+          }
+
           Renderer::ResetBatch();
           Game::DrawBoard();
           Game::DrawPieces();
           Game::HoverCurrentTile();
+          if (Game::IsInCheck(m_Turn))
+          {
+            std::optional<glm::ivec2> kingPos = Game::FindKing(m_Turn);
+            Renderer::DrawImage(glm::vec2(-0.7 + (0.2f * kingPos->x), -0.7f + (0.2f * kingPos->y)), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(14));
+          }
           Renderer::EndBatch();
+          break;
         }
 
         Renderer::ResetBatch();
         Game::DrawBoard();
         Game::DrawPieces();
         Game::HoverCurrentTile();
-
+        if (Game::IsInCheck(m_Turn))
+        {
+          std::optional<glm::ivec2> kingPos = Game::FindKing(m_Turn);
+          Renderer::DrawImage(glm::vec2(-0.7 + (0.2f * kingPos->x), -0.7f + (0.2f * kingPos->y)), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(14));
+        }
         Renderer::DrawImage(glm::vec2(-0.7 + (0.2f * m_SelectedTile.PossiblePaths[m_SelectedTileIndex].x), -0.7f + (0.2f * m_SelectedTile.PossiblePaths[m_SelectedTileIndex].y)), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(14));
 
         Renderer::EndBatch();

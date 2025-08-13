@@ -38,20 +38,28 @@ namespace yk
       void DrawBoard();
       void DrawPieces();
 
-      TileInfo GetTileInfo(glm::ivec2 tile_pos) const;
+      TileInfo GetTileInfo(glm::ivec2 tile_pos, bool check_test) const;
+
+      std::optional<glm::ivec2> FindKing(Side side) const;
+      bool IsSquareAttacked(glm::ivec2 square, Side attacker) const;
+      bool IsInCheck(Side side) const;
+      bool IsCheckmate(Side side);
 
       void OnKeyPress(KeyCode key, bool repeat) final;
 
     private:
       std::shared_ptr<ImageResource> m_ChessAtlas;
 
-      std::optional<Piece> m_Board[8][8];
+      std::array<std::array<std::optional<Piece>, 8>, 8> m_Board;
 
       Side m_Turn = Side::White;
       glm::uvec2 m_CurrentCursorPos;
       TileInfo m_SelectedTile;
       int32_t m_SelectedTileIndex = 0;
       Status m_CurrentStatus = Status::Hovering;
+
+      bool m_WhiteCheck = false;
+      bool m_BlackCheck = false;
     };
   }
 }
