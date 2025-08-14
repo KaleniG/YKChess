@@ -35,7 +35,7 @@ namespace yk
     initInfo.Subpass = 0;
     initInfo.MinImageCount = Renderer::GetDevice()->GetMinSwapchainImageCount();
     initInfo.ImageCount = Renderer::GetSwapchain()->GetImageCount();
-    initInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+    initInfo.MSAASamples = Renderer::GetDevice()->GetMaxSampleCount();
     initInfo.Allocator = VK_NULL_HANDLE;
     initInfo.CheckVkResultFn = VK_NULL_HANDLE;
     ImGui_ImplVulkan_Init(&initInfo);

@@ -28,13 +28,46 @@ namespace yk
       Renderer::Get().s_RenderFinishedSemaphores[i] = Semaphore::Create();
       Renderer::Get().s_ImageAvailableSemaphores[i] = Semaphore::Create();
     }
+    
+    VkSampleCountFlagBits sampleCount = Renderer::GetDevice()->GetMaxSampleCount();
 
     RenderPassStructure renderPassStructure;
-    renderPassStructure.NewSubpass();
-    renderPassStructure.AddColorAttachment(0, VK_FORMAT_B8G8R8A8_SRGB, VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
-    renderPassStructure.AddDepthStencilAttachment(1, VK_FORMAT_D32_SFLOAT, VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_DONT_CARE, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
-    renderPassStructure.SubpassDependency
-    (
+    renderPassStructure.NewSubpass(sampleCount);
+
+    // Color attachment — always added
+    renderPassStructure.AddColorAttachment(
+      0,
+      VK_FORMAT_B8G8R8A8_SRGB,
+      VK_ATTACHMENT_LOAD_OP_CLEAR,
+      VK_ATTACHMENT_STORE_OP_STORE, // Store so it can be presented
+      VK_IMAGE_LAYOUT_UNDEFINED,
+      (sampleCount == VK_SAMPLE_COUNT_1_BIT)
+      ? VK_IMAGE_LAYOUT_PRESENT_SRC_KHR   // Direct present if single-sample
+      : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
+    );
+
+    // Depth attachment — always added
+    renderPassStructure.AddDepthStencilAttachment(
+      1,
+      VK_FORMAT_D32_SFLOAT,
+      VK_ATTACHMENT_LOAD_OP_CLEAR,
+      VK_ATTACHMENT_STORE_OP_DONT_CARE,
+      VK_IMAGE_LAYOUT_UNDEFINED,
+      VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
+    );
+
+    // Resolve attachment — only if MSAA enabled
+    if (sampleCount > VK_SAMPLE_COUNT_1_BIT) {
+      renderPassStructure.AddResolveAttachment(
+        2,
+        VK_FORMAT_B8G8R8A8_SRGB,
+        VK_IMAGE_LAYOUT_UNDEFINED,
+        VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
+      );
+    }
+
+    // Subpass dependency — same in both cases
+    renderPassStructure.SubpassDependency(
       VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
       0,
       VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
@@ -80,7 +113,7 @@ namespace yk
 
       PipelineRasterizationState pRasterizationState(true, false, PolygonMode::Fill, CullMode::Back, FrontFace::Clockwise);
 
-      PipelineMultisampleState pMultisampleState(MultisampleCount::_1, false);
+      PipelineMultisampleState pMultisampleState(Renderer::GetDevice()->GetMaxSampleCount(), false);
 
       DepthTestInfo depthTestInfo;
       depthTestInfo.EnableWrite = false;

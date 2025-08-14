@@ -37,16 +37,27 @@ namespace yk
     std::shared_ptr<RenderPass> r_RenderPass;
 
     VkSwapchainKHR m_Swapchain = VK_NULL_HANDLE;
-    VkImage m_DepthImage;
-    VkDeviceMemory m_DepthImageMemory;
-    VkImageView m_DepthImageView;
+
+    // MSAA state
+    VkSampleCountFlagBits m_MsaaSamples = VK_SAMPLE_COUNT_1_BIT;
+
+    // Multisampled COLOR attachment (offscreen)
+    VkImage        m_ColorMsaaImage = VK_NULL_HANDLE;
+    VkDeviceMemory m_ColorMsaaMemory = VK_NULL_HANDLE;
+    VkImageView    m_ColorMsaaView = VK_NULL_HANDLE;
+
+    // Depth attachment (matches m_MsaaSamples)
+    VkImage        m_DepthImage = VK_NULL_HANDLE;
+    VkDeviceMemory m_DepthImageMemory = VK_NULL_HANDLE;
+    VkImageView    m_DepthImageView = VK_NULL_HANDLE;
+
     std::vector<VkImageView> m_SwapchainImageViews;
     std::vector<VkFramebuffer> m_Framebuffers;
 
-    uint32_t m_SwapchainImageCount;
-    VkSurfaceFormatKHR m_SwapchainFormat;
-    VkPresentModeKHR m_SwapchainPresentMode;
-    VkExtent2D m_Extent;
+    uint32_t m_SwapchainImageCount = 0;
+    VkSurfaceFormatKHR m_SwapchainFormat{};
+    VkPresentModeKHR m_SwapchainPresentMode{};
+    VkExtent2D m_Extent{};
   };
 
 }

@@ -116,6 +116,9 @@ namespace yk
     // SURFACE EXTENT
     VkExtent2D surfaceExtent = Renderer::GetDevice()->GetSurfaceExtent();
 
+    // MSAA SAMPLE COUNT
+    m_MsaaSamples = Renderer::GetDevice()->GetMaxSampleCount();
+
     // SWAPCHAIN CREATION
     VkSwapchainCreateInfoKHR swapchainCreateInfo{};
     swapchainCreateInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
@@ -190,7 +193,7 @@ namespace yk
     imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
     imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     imageCreateInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-    imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+    imageCreateInfo.samples = m_MsaaSamples;
     imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
     result = vkCreateImage(Renderer::GetDevice()->GetLogical(), &imageCreateInfo, VK_NULL_HANDLE, &m_DepthImage);
@@ -258,22 +261,83 @@ namespace yk
 
     Renderer::GetDevice()->SubmitSingleTimeCommandBuffer(commandBuffer);
 
+    // MSAA RESOLVE ATTACHMENT
+    if (m_MsaaSamples > VK_SAMPLE_COUNT_1_BIT) 
+    {
+      VkImageCreateInfo colorMsaaInfo{};
+      colorMsaaInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+      colorMsaaInfo.imageType = VK_IMAGE_TYPE_2D;
+      colorMsaaInfo.extent = { m_Extent.width, m_Extent.height, 1 };
+      colorMsaaInfo.mipLevels = 1;
+      colorMsaaInfo.arrayLayers = 1;
+      colorMsaaInfo.format = m_SwapchainFormat.format;
+      colorMsaaInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+      colorMsaaInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+      // TRANSIENT is optional but recommended for MSAA render target
+      colorMsaaInfo.usage = VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+      colorMsaaInfo.samples = m_MsaaSamples;
+      colorMsaaInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+      VkResult result = vkCreateImage(Renderer::GetDevice()->GetLogical(), &colorMsaaInfo, nullptr, &m_ColorMsaaImage);
+      YK_ASSERT(result == VK_SUCCESS, "[VULKAN] Failed to create MSAA color image");
+
+      VkMemoryRequirements memReq{};
+      vkGetImageMemoryRequirements(Renderer::GetDevice()->GetLogical(), m_ColorMsaaImage, &memReq);
+
+      VkMemoryAllocateInfo allocInfo{};
+      allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+      allocInfo.allocationSize = memReq.size;
+      allocInfo.memoryTypeIndex = Renderer::GetDevice()->FindMemoryTypeIndex(memReq.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+      result = vkAllocateMemory(Renderer::GetDevice()->GetLogical(), &allocInfo, nullptr, &m_ColorMsaaMemory);
+      YK_ASSERT(result == VK_SUCCESS, "[VULKAN] Failed to allocate MSAA color memory");
+
+      result = vkBindImageMemory(Renderer::GetDevice()->GetLogical(), m_ColorMsaaImage, m_ColorMsaaMemory, 0);
+      YK_ASSERT(result == VK_SUCCESS, "[VULKAN] Failed to bind MSAA color memory");
+
+      VkImageViewCreateInfo viewInfo{};
+      viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+      viewInfo.image = m_ColorMsaaImage;
+      viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+      viewInfo.format = m_SwapchainFormat.format;
+      viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+      viewInfo.subresourceRange.baseMipLevel = 0;
+      viewInfo.subresourceRange.levelCount = 1;
+      viewInfo.subresourceRange.baseArrayLayer = 0;
+      viewInfo.subresourceRange.layerCount = 1;
+      viewInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
+
+      result = vkCreateImageView(Renderer::GetDevice()->GetLogical(), &viewInfo, nullptr, &m_ColorMsaaView);
+      YK_ASSERT(result == VK_SUCCESS, "[VULKAN] Failed to create MSAA color image view");
+    }
+
     // FRAMEBUFFERS
-    m_Framebuffers.resize(swapchainImages.size());
+    m_Framebuffers.resize(m_SwapchainImageViews.size());
 
     for (size_t i = 0; i < m_SwapchainImageViews.size(); i++) {
-      std::array<VkImageView, 2> attachments = { m_SwapchainImageViews[i], m_DepthImageView };
+      std::array<VkImageView, 3> attachmentsMsaa = {
+        m_ColorMsaaView,        // attachment 0: multisampled color
+        m_DepthImageView,       // attachment 1: multisampled depth
+        m_SwapchainImageViews[i]// attachment 2: resolve (swapchain)
+      };
+
+      std::array<VkImageView, 2> attachmentsNoMsaa = {
+        m_SwapchainImageViews[i], // attachment 0: swapchain color
+        m_DepthImageView          // attachment 1: depth
+      };
+
+      const bool msaa = (m_MsaaSamples > VK_SAMPLE_COUNT_1_BIT);
 
       VkFramebufferCreateInfo framebufferCreateInfo{};
       framebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
       framebufferCreateInfo.renderPass = r_RenderPass->Get();
-      framebufferCreateInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-      framebufferCreateInfo.pAttachments = attachments.data();
+      framebufferCreateInfo.attachmentCount = msaa ? static_cast<uint32_t>(attachmentsMsaa.size()) : static_cast<uint32_t>(attachmentsNoMsaa.size());
+      framebufferCreateInfo.pAttachments = msaa ? attachmentsMsaa.data() : attachmentsNoMsaa.data();
       framebufferCreateInfo.width = m_Extent.width;
       framebufferCreateInfo.height = m_Extent.height;
       framebufferCreateInfo.layers = 1;
 
-      VkResult result = vkCreateFramebuffer(Renderer::GetDevice()->GetLogical(), &framebufferCreateInfo, VK_NULL_HANDLE, &m_Framebuffers[i]);
+      VkResult result = vkCreateFramebuffer(Renderer::GetDevice()->GetLogical(), &framebufferCreateInfo, nullptr, &m_Framebuffers[i]);
       YK_ASSERT(result == VK_SUCCESS, "[VULKAN] Failed to create a swapchain framebuffer. Error: {}", Utils::VkResultToString(result));
     }
   }
@@ -283,6 +347,22 @@ namespace yk
     vkDestroyImageView(Renderer::GetDevice()->GetLogical(), m_DepthImageView, VK_NULL_HANDLE);
     vkDestroyImage(Renderer::GetDevice()->GetLogical(), m_DepthImage, VK_NULL_HANDLE);
     vkFreeMemory(Renderer::GetDevice()->GetLogical(), m_DepthImageMemory, VK_NULL_HANDLE);
+
+    if (m_ColorMsaaView) 
+    { 
+      vkDestroyImageView(Renderer::GetDevice()->GetLogical(), m_ColorMsaaView, nullptr);   
+      m_ColorMsaaView = VK_NULL_HANDLE; 
+    }
+    if (m_ColorMsaaImage) 
+    { 
+      vkDestroyImage(Renderer::GetDevice()->GetLogical(), m_ColorMsaaImage, nullptr);
+      m_ColorMsaaImage = VK_NULL_HANDLE; 
+    }
+    if (m_ColorMsaaMemory) 
+    { 
+      vkFreeMemory(Renderer::GetDevice()->GetLogical(), m_ColorMsaaMemory, nullptr);
+      m_ColorMsaaMemory = VK_NULL_HANDLE;
+    }
 
     for (VkFramebuffer framebuffer : m_Framebuffers)
       vkDestroyFramebuffer(Renderer::GetDevice()->GetLogical(), framebuffer, VK_NULL_HANDLE);
