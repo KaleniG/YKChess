@@ -28,7 +28,7 @@ namespace yk
 
     StagingBuffer stagingBuffer = StagingBuffer::Create(imageSize);
     stagingBuffer.Map();
-    stagingBuffer.Update(pixels);
+    stagingBuffer.UpdateData(pixels);
     stagingBuffer.Unmap();
 
     stbi_image_free(pixels);

@@ -1,3 +1,5 @@
+#include "Core/WindowManager.h"
+#include "Core/Input.h"
 #include "GameLogic/Chess/Game.h"
 #include "Rendering/Renderer.h"
 
@@ -1047,5 +1049,35 @@ namespace yk
       }
       }
     }
+
+    void Game::OnMouseButtonPress(MouseCode button)
+    {
+      switch (button)
+      {
+      case Mouse::ButtonLeft:
+      {
+        Renderer::UpdateIDFramebuffer();
+
+        glm::vec2 mousePos = Input::GetMousePosition();
+        glm::uvec2 winSize = WindowManager::GetWindowSize();
+        glm::uvec2 fbSize = WindowManager::GetFramebufferSize();
+
+        float scaleX = static_cast<float>(fbSize.x) / static_cast<float>(winSize.x);
+        float scaleY = static_cast<float>(fbSize.y) / static_cast<float>(winSize.y);
+
+        int32_t pixelX = std::clamp(static_cast<int>(mousePos.x * scaleX), 0, static_cast<int32_t>(fbSize.x) - 1);
+        int32_t pixelY = std::clamp(static_cast<int>(mousePos.y * scaleY), 0, static_cast<int32_t>(fbSize.y) - 1);
+
+        pixelY = fbSize.y - 1 - pixelY;
+
+        uint32_t id = Renderer::GetPositionID(glm::uvec2(pixelX, pixelY));
+
+        YK_INFO("ID {}", id);
+
+        break;
+      }
+      }
+    }
+
   }
 }

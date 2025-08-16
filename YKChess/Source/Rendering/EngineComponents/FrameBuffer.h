@@ -51,6 +51,8 @@ namespace yk
 
     static std::shared_ptr<FrameBuffer> Create(const std::shared_ptr<RenderPass>& rendepass, FrameBufferStructure& structure);
 
+    const VkFramebuffer& Get() const { return m_Framebuffer; }
+
   private:
     std::shared_ptr<RenderPass> r_RenderPass;
 

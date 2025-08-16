@@ -15,7 +15,7 @@ namespace yk
     m_Mapped = true;
   }
 
-  void MappableBuffer::Update(void* data, const VkDeviceSize& size, const VkDeviceSize& offset, bool flush)
+  void MappableBuffer::UpdateData(void* data, const VkDeviceSize& size, const VkDeviceSize& offset, bool flush)
   {
     YK_ASSERT(m_Mapped, "Vulkan/System: this buffer's memory isn't mapped");
     std::memcpy(m_Data, data, static_cast<size_t>(size ? size : m_Size));
@@ -31,6 +31,16 @@ namespace yk
       VkResult result = vkInvalidateMappedMemoryRanges(Renderer::GetDevice()->GetLogical(), 1, &memoryRange);
       YK_ASSERT(result == VK_SUCCESS, "Vulkan: failed to invalidate mapped memory. {}", Utils::VkResultToString(result));
     }
+  }
+
+  void MappableBuffer::GetData(void* data, size_t size) const
+  {
+    if (!m_Mapped)
+    {
+      YK_WARN("Vulkan/System: trying to access unmapped memory");
+      return;
+    }
+    std::memcpy(data, m_Data, size);
   }
 
   void MappableBuffer::Unmap()

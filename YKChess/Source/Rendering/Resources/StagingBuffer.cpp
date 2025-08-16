@@ -29,14 +29,15 @@ namespace yk
 
   StagingBuffer StagingBuffer::Create(const BufferCreateInfo& info)
   {
-    return StagingBuffer::Create(info.Size);
+    return StagingBuffer::Create(info.Size, info.Copyable, info.CopyDestination);
   }
 
-  StagingBuffer StagingBuffer::Create(const VkDeviceSize& size)
+  StagingBuffer StagingBuffer::Create(const VkDeviceSize& size, bool copiable, bool copy_dst)
   {
     StagingBuffer buffer;
-    buffer.CreateMappableBuffer(VK_BUFFER_USAGE_TRANSFER_SRC_BIT, size);
+    buffer.CreateMappableBuffer(VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, size);
     return buffer;
+
   }
 
 }

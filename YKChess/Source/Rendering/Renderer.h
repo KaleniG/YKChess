@@ -6,8 +6,10 @@
 #include <vulkan/vulkan.h>
 #include <glm/glm.hpp>
 
+#include "Core/EventManager.h"
 #include "Rendering/EngineComponents/CommandBuffer.h"
 #include "Rendering/EngineComponents/CommandPool.h"
+#include "Rendering/EngineComponents/FrameBuffer.h"
 #include "Rendering/EngineComponents/RenderPass.h"
 #include "Rendering/EngineComponents/Semaphore.h"
 #include "Rendering/EngineComponents/Fence.h"
@@ -16,7 +18,10 @@
 #include "Rendering/Pipeline/PipelineCache.h"
 #include "Rendering/Pipeline/Pipeline.h"
 #include "Rendering/Pipeline/Shader.h"
+#include "Rendering/Resources/DepthStencilAttachment.h"
+#include "Rendering/Resources/ColorAttachment.h"
 #include "Rendering/Resources/MUniformBuffer.h"
+#include "Rendering/Resources/StagingBuffer.h"
 #include "Rendering/Resources/VertexBuffer.h"
 #include "Rendering/Resources/IndexBuffer.h"
 #include "Rendering/Resources/Texture.h"
@@ -25,6 +30,7 @@
 #include "Rendering/ImageResource.h"
 #include "Rendering/Swapchain.h"
 #include "Rendering/Device.h"
+#include "Rendering/Vertex.h"
 
 #define MAX_FRAMES_IN_FLIGHT 3
 
@@ -42,10 +48,12 @@ namespace yk
     static void WaitIdle();
 
     static void SetImageSlot(uint32_t slot, std::shared_ptr<ImageResource> image);
-    static void DrawImage(glm::vec2 position, glm::vec2 size, uint32_t slot, SubTexture subtexture);
+    static void DrawImage(glm::vec2 position, glm::vec2 size, uint32_t id, SubTexture subtexture);
     static void EndBatch();
     static void ResetBatch();
     static void DrawText(const std::string& text, glm::vec2 size, glm::vec2 position, glm::vec4 color, std::shared_ptr<FontResource> font);
+    static void UpdateIDFramebuffer();
+    static uint32_t GetPositionID(glm::uvec2 position);
 
     static void Render();
 
@@ -68,9 +76,12 @@ namespace yk
   private:
     bool s_Initialized = false;
 
+    bool s_CaptureID = false;
+
     std::shared_ptr<Device> s_Device;
     std::shared_ptr<Swapchain> s_Swapchain;
     std::shared_ptr<RenderPass> s_RenderPass;
+    std::shared_ptr<RenderPass> s_MousePickingRenderPass;
     std::shared_ptr<PipelineCache> s_PipelineCache;
 
     std::shared_ptr<CommandPool> s_CommandPool;
@@ -88,16 +99,23 @@ namespace yk
     std::array<std::shared_ptr<MUniformBuffer>, MAX_FRAMES_IN_FLIGHT> s_UniformBuffers;
 
     std::array<std::shared_ptr<DescriptorSet>, MAX_FRAMES_IN_FLIGHT> s_PipelineDescriptorSets;
-    std::shared_ptr<DescriptorSetLayout> s_DescriptorSetLayout;
+    std::shared_ptr<DescriptorSetLayout> s_ShaderDescriptorSetLayout;
     std::shared_ptr<Shader> s_VertShader;
     std::shared_ptr<Shader> s_FragShader;
+    std::shared_ptr<Shader> s_MousePickingVertShader;
+    std::shared_ptr<Shader> s_MousePickingFragShader;
     std::shared_ptr<GraphicsPipeline> s_Pipeline;
+    std::shared_ptr<GraphicsPipeline> s_MousePickingPipeline;
     std::shared_ptr<PipelineLayout> s_PipelineLayout;
 
-    std::vector<float> s_VertexBatchVector;
+    std::vector<Vertex> s_VertexBatchVector;
     std::vector<uint32_t> s_IndexBatchVector;
     uint32_t s_ObjectCount = 0;
 
+    std::shared_ptr<ColorAttachment> s_MousePickingColorAttachement;
+    std::shared_ptr<DepthStencilAttachment> s_MousePickingDepthStencilAttachement;
+    std::shared_ptr<FrameBuffer> s_MousePickingFramebuffer;
+    RenderPassData s_MousePickingRenderPassData;
 
   private:
     friend class DebugOverlayManager;

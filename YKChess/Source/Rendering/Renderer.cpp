@@ -46,6 +46,7 @@ namespace yk
       : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
     );
 
+
     // Depth attachment — always added
     renderPassStructure.AddDepthStencilAttachment(
       1,
@@ -73,26 +74,73 @@ namespace yk
       VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
       VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT
     );
-
     Renderer::Get().s_RenderPass = RenderPass::Create(renderPassStructure.GetDataAndReset());
     Renderer::Get().s_Swapchain = Swapchain::Create(Renderer::Get().s_RenderPass);
 
-    DescriptorSetLayoutConfig basicSetLayout;
-    basicSetLayout.Add(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT);
-    basicSetLayout.Add(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
-    Renderer::Get().s_DescriptorSetLayout = DescriptorSetLayout::Create(basicSetLayout);
-    Renderer::Get().s_DescriptorPool = DescriptorPool::Create({ Renderer::Get().s_DescriptorSetLayout }, true);
+
+    renderPassStructure = RenderPassStructure();
+    renderPassStructure.NewSubpass();
+
+    renderPassStructure.AddColorAttachment(
+      0,
+      VK_FORMAT_R32_UINT,
+      VK_ATTACHMENT_LOAD_OP_CLEAR,
+      VK_ATTACHMENT_STORE_OP_STORE,
+      VK_IMAGE_LAYOUT_UNDEFINED,
+      VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
+    );
+
+    renderPassStructure.AddDepthStencilAttachment(
+      1,
+      VK_FORMAT_D32_SFLOAT,
+      VK_ATTACHMENT_LOAD_OP_CLEAR,
+      VK_ATTACHMENT_STORE_OP_DONT_CARE,
+      VK_IMAGE_LAYOUT_UNDEFINED,
+      VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
+    );
+
+    renderPassStructure.SubpassDependency(
+      VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
+      0,
+      VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
+      VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT
+    );
+
+    Renderer::Get().s_MousePickingRenderPassData = renderPassStructure.GetDataAndReset();
+
+    Renderer::Get().s_MousePickingRenderPass = RenderPass::Create(Renderer::Get().s_MousePickingRenderPassData);
+
+    // Mouse picking attachment & framebuffer
+    glm::uvec2 windowSize = WindowManager::GetWindowSize();
+    Renderer::Get().s_MousePickingColorAttachement = ColorAttachment::Create(VK_FORMAT_R32_UINT, { windowSize.x, windowSize.y }, YK_DEFAULT_VIEW_COMPONENT_MAPPING, true);
+    Renderer::Get().s_MousePickingColorAttachement->Transition(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    Renderer::Get().s_MousePickingDepthStencilAttachement = DepthStencilAttachment::Create(Renderer::GetDevice()->GetDepthAttachmentFormat(), { windowSize.x, windowSize.y });
+
+    FrameBufferStructure fStructure(Renderer::Get().s_MousePickingRenderPassData);
+    fStructure.AddView(Renderer::Get().s_MousePickingColorAttachement);
+    fStructure.AddView(Renderer::Get().s_MousePickingDepthStencilAttachement);
+
+    Renderer::Get().s_MousePickingFramebuffer = FrameBuffer::Create(Renderer::Get().s_MousePickingRenderPass, fStructure);
+
+    // Descriptor stuff
+    DescriptorSetLayoutConfig shaderDescriptorSetLayout;
+    shaderDescriptorSetLayout.Add(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT);
+    shaderDescriptorSetLayout.Add(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
+    Renderer::Get().s_ShaderDescriptorSetLayout = DescriptorSetLayout::Create(shaderDescriptorSetLayout);
+    Renderer::Get().s_DescriptorPool = DescriptorPool::Create({ Renderer::Get().s_ShaderDescriptorSetLayout }, true);
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
     {
-      Renderer::Get().s_PipelineDescriptorSets[i] = DescriptorSet::Allocate(Renderer::Get().s_DescriptorSetLayout, Renderer::Get().s_DescriptorPool);
+      Renderer::Get().s_PipelineDescriptorSets[i] = DescriptorSet::Allocate(Renderer::Get().s_ShaderDescriptorSetLayout, Renderer::Get().s_DescriptorPool);
     }
 
     Renderer::Get().s_VertShader = Shader::Create("Assets/Shaders/Shader.vert.spv");
     Renderer::Get().s_FragShader = Shader::Create("Assets/Shaders/Shader.frag.spv");
+    Renderer::Get().s_MousePickingVertShader = Shader::Create("Assets/Shaders/MousePicking.vert.spv");
+    Renderer::Get().s_MousePickingFragShader = Shader::Create("Assets/Shaders/MousePicking.frag.spv");
 
     PipelineLayoutStructure basicLayoutStructure;
-    basicLayoutStructure.AddDescriptorSetLayout(Renderer::Get().s_DescriptorSetLayout);
+    basicLayoutStructure.AddDescriptorSetLayout(Renderer::Get().s_ShaderDescriptorSetLayout);
 
     Renderer::Get().s_PipelineLayout = PipelineLayout::Create(basicLayoutStructure);
 
@@ -101,11 +149,17 @@ namespace yk
       pShaderStages.AddShader(Renderer::Get().s_VertShader, "main");
       pShaderStages.AddShader(Renderer::Get().s_FragShader, "main");
 
+      ////////////// MOUSE PICKING
+      PipelineShaders pMousePickingShaderStages;
+      pMousePickingShaderStages.AddShader(Renderer::Get().s_MousePickingVertShader, "main");
+      pMousePickingShaderStages.AddShader(Renderer::Get().s_MousePickingFragShader, "main");
+      ////////////
+
       PipelineVertexInputState pInputState;
       pInputState.AddBinding(0, sizeof(Vertex), InputRate::Vertex);
       pInputState.AddAttribute(0, VertexInputFormat::VEC2, offsetof(Vertex, Position));
-      //pInputState.AddAttribute(1, VertexInputFormat::VEC3, offsetof(Vertex, Color));
-      pInputState.AddAttribute(1, VertexInputFormat::VEC2, offsetof(Vertex, TextureCoord));
+      pInputState.AddAttribute(1, VertexInputFormat::VEC2, offsetof(Vertex, UV));
+      pInputState.AddAttribute(2, VertexInputFormat::UINT, offsetof(Vertex, ID));
 
       PipelineInputAssemblyState pInputAssembly(InputPrimitiveTopology::TriangleList);
 
@@ -114,6 +168,10 @@ namespace yk
       PipelineRasterizationState pRasterizationState(true, false, PolygonMode::Fill, CullMode::Back, FrontFace::Clockwise);
 
       PipelineMultisampleState pMultisampleState(Renderer::GetDevice()->GetMaxSampleCount(), false);
+
+      ////////////// MOUSE PICKING
+      PipelineMultisampleState pMousePickingMultisampleState(VK_SAMPLE_COUNT_1_BIT, false);
+      ////////////
 
       DepthTestInfo depthTestInfo;
       depthTestInfo.EnableWrite = false;
@@ -133,12 +191,26 @@ namespace yk
         VK_BLEND_OP_ADD,
         VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT
       );
-
       PipelineColorBlendState pColorBlendingState(colorBlendAttachments);
+
+      ////////////// MOUSE PICKING
+      PipelineColorBlendAttachments mousePickingColorBlendAttachments;
+      mousePickingColorBlendAttachments.AddAttachmentState
+      (
+        VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT
+      );
+      PipelineColorBlendState pMousePickingColorBlendingState(mousePickingColorBlendAttachments);
+      ////////////
 
       PipelineDynamicStates pDynamicStates;
       pDynamicStates.AddDynamicState(VK_DYNAMIC_STATE_VIEWPORT);
       pDynamicStates.AddDynamicState(VK_DYNAMIC_STATE_SCISSOR);
+
+      PipelineCreationSpecification spec;
+      spec.Flags = VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT;
+#if defined(CONFIG_DEBUG)
+      spec.Flags |= VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT;
+#endif
 
       Renderer::Get().s_Pipeline = GraphicsPipeline::Create
       (
@@ -153,12 +225,36 @@ namespace yk
         pDynamicStates,
         Renderer::Get().s_PipelineLayout,
         Renderer::Get().s_RenderPass,
-        0
+        0,
+        spec
+      );
+
+      spec.Flags = VK_PIPELINE_CREATE_DERIVATIVE_BIT;
+#if defined(CONFIG_DEBUG)
+      spec.Flags |= VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT;
+#endif
+      spec.BasePipelineHandle = Renderer::Get().s_Pipeline->Get();
+
+      Renderer::Get().s_MousePickingPipeline = GraphicsPipeline::Create
+      (
+        pMousePickingShaderStages,
+        pInputState,
+        pInputAssembly,
+        pViewportScissorState,
+        pRasterizationState,
+        pMousePickingMultisampleState,
+        pDepthStencilState,
+        pMousePickingColorBlendingState,
+        pDynamicStates,
+        Renderer::Get().s_PipelineLayout,
+        Renderer::Get().s_MousePickingRenderPass,
+        0,
+        spec
       );
     }
 
     for (std::shared_ptr<MUniformBuffer>& ub : Renderer::Get().s_UniformBuffers)
-      ub = MUniformBuffer::Create(sizeof(UniformBufferObject));
+      ub = MUniformBuffer::Create(sizeof(ShaderUBO));
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
     {
@@ -194,7 +290,7 @@ namespace yk
     }
   }
 
-  void Renderer::DrawImage(glm::vec2 position, glm::vec2 size, uint32_t slot, SubTexture subtexture)
+  void Renderer::DrawImage(glm::vec2 position, glm::vec2 size, uint32_t id, SubTexture subtexture)
   {
     YK_ASSERT(Renderer::IsInitialized(), "The renderer hasn't been initialized yet");
 
@@ -210,12 +306,11 @@ namespace yk
 
     for (int i = 0; i < 4; i++)
     {
-      vertices[i] = vertices[i] * size + position;
-      Renderer::Get().s_VertexBatchVector.reserve(4);
-      Renderer::Get().s_VertexBatchVector.emplace_back(vertices[i].x);
-      Renderer::Get().s_VertexBatchVector.emplace_back(vertices[i].y);
-      Renderer::Get().s_VertexBatchVector.emplace_back(subtexture.UVCoordinates[i].x);
-      Renderer::Get().s_VertexBatchVector.emplace_back(subtexture.UVCoordinates[i].y);
+      Vertex vertex;
+      vertex.Position = vertices[i] * size + position;
+      vertex.UV = subtexture.UVCoordinates[i];
+      vertex.ID = id;
+      Renderer::Get().s_VertexBatchVector.push_back(vertex);
     }
 
     std::array<uint32_t, 6> indices =
@@ -255,6 +350,40 @@ namespace yk
     YK_ASSERT(Renderer::IsInitialized(), "The renderer hasn't been initialized yet");
   }
 
+  void Renderer::UpdateIDFramebuffer()
+  {
+    YK_ASSERT(Renderer::IsInitialized(), "The renderer hasn't been initialized yet");
+    Renderer::Get().s_CaptureID = true;
+  }
+
+  uint32_t Renderer::GetPositionID(glm::uvec2 position)
+  {
+    YK_ASSERT(Renderer::IsInitialized(), "The renderer hasn't been initialized yet");
+
+    StagingBuffer buffer = StagingBuffer::Create(sizeof(uint32_t));
+    VkBufferImageCopy region{};
+    region.bufferOffset = 0;
+    region.bufferRowLength = 0;
+    region.bufferImageHeight = 0;
+    region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    region.imageSubresource.mipLevel = 0;
+    region.imageSubresource.baseArrayLayer = 0;
+    region.imageSubresource.layerCount = 1;
+    region.imageOffset = { static_cast<int32_t>(position.x), static_cast<int32_t>(position.y), 0 };
+    region.imageExtent = { 1, 1, 1 };
+
+    Renderer::Get().s_MousePickingColorAttachement->CopyToBuffer(buffer, region);
+
+    buffer.Map(sizeof(uint32_t));
+    uint32_t id;
+    buffer.GetData(&id, sizeof(id));
+    buffer.Unmap();
+
+    Renderer::Get().s_MousePickingColorAttachement->Transition(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+    return id;
+  }
+
   void Renderer::Render()
   {
     YK_ASSERT(Renderer::IsInitialized(), "The renderer hasn't been initialized yet");
@@ -273,11 +402,11 @@ namespace yk
     float aspect = static_cast<float>(WindowManager::GetWindowSize().x) / static_cast<float>(WindowManager::GetWindowSize().y);
     glm::mat4 projection = glm::ortho(-aspect, aspect, -1.0f, 1.0f, -1.0f, 1.0f);
 
-    UniformBufferObject ubo;
+    ShaderUBO ubo;
     ubo.Projection = projection;
     ubo.MousePosition = Input::GetMousePosition();
 
-    Renderer::Get().s_UniformBuffers[Renderer::Get().s_CurrentFrame]->Update(&ubo);
+    Renderer::Get().s_UniformBuffers[Renderer::Get().s_CurrentFrame]->UpdateData(&ubo);
 
     /////////////////////////////////////
     VkCommandBufferBeginInfo commandBufferBeginInfo{};
@@ -330,9 +459,37 @@ namespace yk
     DebugOverlayManager::Render(Renderer::Get().s_CommandBuffers[Renderer::Get().s_CurrentFrame]);
 
     vkCmdEndRenderPass(Renderer::Get().s_CommandBuffers[Renderer::Get().s_CurrentFrame]->Get());
+
+    std::array<VkClearValue, 2> mousePickingClearValues{};
+    mousePickingClearValues[0].color.uint32[0] = 0;
+    mousePickingClearValues[1].depthStencil = { 1.0f, 0 };
+
+    VkRenderPassBeginInfo mousePickingRenderPassBeginInfo{};
+    mousePickingRenderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    mousePickingRenderPassBeginInfo.renderPass = Renderer::Get().s_MousePickingRenderPass->Get();
+    mousePickingRenderPassBeginInfo.framebuffer = Renderer::Get().s_MousePickingFramebuffer->Get();
+    mousePickingRenderPassBeginInfo.renderArea.offset = { 0, 0 };
+    mousePickingRenderPassBeginInfo.renderArea.extent = Renderer::Get().s_Swapchain->GetExtent();
+    mousePickingRenderPassBeginInfo.clearValueCount = static_cast<uint32_t>(mousePickingClearValues.size());
+    mousePickingRenderPassBeginInfo.pClearValues = mousePickingClearValues.data();
+
+    vkCmdBeginRenderPass(Renderer::Get().s_CommandBuffers[Renderer::Get().s_CurrentFrame]->Get(), &mousePickingRenderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+    vkCmdSetViewport(Renderer::Get().s_CommandBuffers[Renderer::Get().s_CurrentFrame]->Get(), 0, 1, &viewport);
+    vkCmdSetScissor(Renderer::Get().s_CommandBuffers[Renderer::Get().s_CurrentFrame]->Get(), 0, 1, &scissor);
+
+    vkCmdBindVertexBuffers(Renderer::Get().s_CommandBuffers[Renderer::Get().s_CurrentFrame]->Get(), 0, 1, vertexBuffers, offsets);
+    vkCmdBindIndexBuffer(Renderer::Get().s_CommandBuffers[Renderer::Get().s_CurrentFrame]->Get(), Renderer::Get().s_IndexBuffer->Get(), 0, VK_INDEX_TYPE_UINT32);
+
+    vkCmdBindDescriptorSets(Renderer::Get().s_CommandBuffers[Renderer::Get().s_CurrentFrame]->Get(), VK_PIPELINE_BIND_POINT_GRAPHICS, Renderer::Get().s_PipelineLayout->Get(), 0, 1, &Renderer::Get().s_PipelineDescriptorSets[Renderer::Get().s_CurrentFrame]->Get(), 0, VK_NULL_HANDLE);
+    vkCmdBindPipeline(Renderer::Get().s_CommandBuffers[Renderer::Get().s_CurrentFrame]->Get(), VK_PIPELINE_BIND_POINT_GRAPHICS, Renderer::Get().s_MousePickingPipeline->Get());
+
+    vkCmdDrawIndexed(Renderer::Get().s_CommandBuffers[Renderer::Get().s_CurrentFrame]->Get(), static_cast<uint32_t>(Renderer::Get().s_IndexBuffer->GetIndexCount()), 1, 0, 0, 0);
+
+    vkCmdEndRenderPass(Renderer::Get().s_CommandBuffers[Renderer::Get().s_CurrentFrame]->Get());
+
     result = vkEndCommandBuffer(Renderer::Get().s_CommandBuffers[Renderer::Get().s_CurrentFrame]->Get());
     YK_ASSERT(result == VK_SUCCESS, "[VULKAN] Failed to end recording command buffer. Error: {}", Utils::VkResultToString(result));
-
     /////////////////////////////////////
 
     Renderer::Get().s_CommandBuffers[Renderer::Get().s_CurrentFrame]->Submit
@@ -348,6 +505,23 @@ namespace yk
       Renderer::Get().s_CurrentImageIndex,
       Renderer::Get().s_RenderFinishedSemaphores[Renderer::Get().s_CurrentFrame]
     );
+
+    VkExtent3D mousePickingExtent = Renderer::Get().s_MousePickingColorAttachement->GetExtent();
+    glm::uvec2 framebufferSize = WindowManager::GetFramebufferSize();
+    if (mousePickingExtent.width != framebufferSize.x || mousePickingExtent.height != framebufferSize.y)
+    {
+      Renderer::WaitIdle();
+      Renderer::Get().s_MousePickingColorAttachement = ColorAttachment::Create(VK_FORMAT_R32_UINT, { framebufferSize.x, framebufferSize.y }, YK_DEFAULT_VIEW_COMPONENT_MAPPING, true);
+      Renderer::Get().s_MousePickingColorAttachement->Transition(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+      Renderer::Get().s_MousePickingDepthStencilAttachement = DepthStencilAttachment::Create(Renderer::GetDevice()->GetDepthAttachmentFormat(), { framebufferSize.x, framebufferSize.y });
+
+      FrameBufferStructure fStructure(Renderer::Get().s_MousePickingRenderPassData);
+      fStructure.AddView(Renderer::Get().s_MousePickingColorAttachement);
+      fStructure.AddView(Renderer::Get().s_MousePickingDepthStencilAttachement);
+
+      Renderer::Get().s_MousePickingFramebuffer = FrameBuffer::Create(Renderer::Get().s_MousePickingRenderPass, fStructure);
+    }
+
 
     Renderer::Get().s_CurrentFrame = (Renderer::Get().s_CurrentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
   }

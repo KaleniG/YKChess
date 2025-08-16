@@ -9,7 +9,7 @@ namespace yk
   {
     VkFormat Format;
     VkExtent2D Extent;
-    VkComponentMapping ComponentMapping = DEFAULT_VIEW_COMPONENT_MAPPING;
+    VkComponentMapping ComponentMapping = YK_DEFAULT_VIEW_COMPONENT_MAPPING;
     bool Copiable = false;
   };
 
@@ -32,7 +32,7 @@ namespace yk
       const VkFormat& format,
       const AttachmentTypeFlags type,
       const VkExtent3D& extent,
-      const VkComponentMapping& view_component_mapping = DEFAULT_VIEW_COMPONENT_MAPPING,
+      const VkComponentMapping& view_component_mapping = YK_DEFAULT_VIEW_COMPONENT_MAPPING,
       uint32_t layer_count = 1,
       uint32_t mipmap_levels = 1,
       bool copiable = false,

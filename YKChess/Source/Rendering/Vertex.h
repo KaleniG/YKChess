@@ -8,7 +8,7 @@
 namespace yk
 {
 
-  struct alignas(16) UniformBufferObject
+  struct alignas(16) ShaderUBO
   {
     glm::mat4 Projection;
     glm::vec2 MousePosition;
@@ -17,30 +17,10 @@ namespace yk
   struct alignas(16) Vertex
   {
     glm::vec2 Position;
-    glm::vec2 TextureCoord;
+    glm::vec2 UV;
+    uint32_t ID;
 
-    bool operator==(const Vertex& other) const { return Position == other.Position && TextureCoord == other.TextureCoord; }
+    bool operator==(const Vertex& other) const { return Position == other.Position && UV == other.UV && ID == other.ID; }
   };
 
-}
-
-namespace std
-{
-  template<> struct hash<yk::Vertex>
-  {
-    size_t operator()(yk::Vertex const& vertex) const
-    {
-      size_t seed = 0;
-      hash_combine(seed, vertex.Position);
-      hash_combine(seed, vertex.TextureCoord);
-      return seed;
-    }
-
-  private:
-    template<typename T>
-    void hash_combine(size_t& seed, T const& v) const
-    {
-      seed ^= hash<T>()(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-    }
-  };
 }

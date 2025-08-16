@@ -17,7 +17,7 @@ namespace yk
     VkFormat Format;
     VkImageType Type;
     VkExtent3D Extent;
-    VkComponentMapping ComponentMapping = DEFAULT_VIEW_COMPONENT_MAPPING;
+    VkComponentMapping ComponentMapping = YK_DEFAULT_VIEW_COMPONENT_MAPPING;
     uint32_t LayerCount = 1;
     uint32_t MipmapLevels = 1;
     bool Copiable = false;
@@ -39,7 +39,7 @@ namespace yk
       const VkExtent3D& extent, 
       const std::shared_ptr<Sampler>& sampler = nullptr,
       const SamplerCreateInfo& sampler_create_info = {}, 
-      const VkComponentMapping& view_component_mapping = DEFAULT_VIEW_COMPONENT_MAPPING,
+      const VkComponentMapping& view_component_mapping = YK_DEFAULT_VIEW_COMPONENT_MAPPING,
       const uint32_t& layer_count = 1, 
       const uint32_t& mipmap_levels = 1, 
       bool copiable = false, 

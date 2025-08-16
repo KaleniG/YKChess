@@ -13,7 +13,8 @@ namespace yk
   {
   public:
     void Map(const VkDeviceSize& size = VK_WHOLE_SIZE, const VkDeviceSize& offset = 0);
-    void Update(void* data, const VkDeviceSize& size = 0, const VkDeviceSize& offset = 0, bool flush = true);
+    void UpdateData(void* data, const VkDeviceSize& size = 0, const VkDeviceSize& offset = 0, bool flush = true);
+    void GetData(void* data, size_t size) const;
     void Unmap();
 
   protected:

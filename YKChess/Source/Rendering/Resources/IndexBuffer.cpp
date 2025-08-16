@@ -10,7 +10,7 @@ namespace yk
 
     StagingBuffer stagingBuffer = StagingBuffer::Create(bufferSize);
     stagingBuffer.Map();
-    stagingBuffer.Update((void*)indices.data());
+    stagingBuffer.UpdateData((void*)indices.data());
     stagingBuffer.Unmap();
 
     std::shared_ptr<IndexBuffer> buffer = IndexBuffer::Create(bufferSize);

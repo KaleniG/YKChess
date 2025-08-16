@@ -11,7 +11,7 @@ namespace yk
     static StagingBuffer Create(Image& src_image, bool copy = true);
     static StagingBuffer Create(Buffer& src_buffer, bool copy = true);
     static StagingBuffer Create(const BufferCreateInfo& info);
-    static StagingBuffer Create(const VkDeviceSize& size);
+    static StagingBuffer Create(const VkDeviceSize& size, bool copiable = true, bool copy_dst = false);
   };
 
 }

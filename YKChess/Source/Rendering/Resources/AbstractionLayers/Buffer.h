@@ -28,6 +28,7 @@ namespace yk
   {
     VkDeviceSize Size;
     bool Copyable = false;
+    bool CopyDestination = false;
   };
 
   struct BufferViewCreateInfo

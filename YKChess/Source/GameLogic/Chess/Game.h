@@ -46,6 +46,7 @@ namespace yk
       bool IsCheckmate(Side side);
 
       void OnKeyPress(KeyCode key, bool repeat) final;
+      void OnMouseButtonPress(MouseCode button) final;
 
     private:
       std::shared_ptr<ImageResource> m_ChessAtlas;

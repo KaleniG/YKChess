@@ -7,7 +7,7 @@ namespace yk
 
     StagingBuffer stagingBuffer = StagingBuffer::Create(bufferSize);
     stagingBuffer.Map();
-    stagingBuffer.Update((void*)vertices.data());
+    stagingBuffer.UpdateData((void*)vertices.data());
     stagingBuffer.Unmap();
 
     std::shared_ptr<VertexBuffer> buffer = VertexBuffer::Create(bufferSize);

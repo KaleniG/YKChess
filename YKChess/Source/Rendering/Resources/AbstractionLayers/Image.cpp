@@ -225,7 +225,7 @@ namespace yk
     YK_ASSERT(dst_image.m_Usage & VK_IMAGE_USAGE_TRANSFER_DST_BIT, "Vulkan/System: the destination image cannot be used as a data transfer destination, 'VK_IMAGE_USAGE_TRANSFER_DST_BIT' usage flag has not been specified during the image creation");
 
     if (m_CurrentLayout != VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL)
-      Transition(VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+      Image::Transition(VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
     if (dst_image.m_CurrentLayout != VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
       dst_image.Transition(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
