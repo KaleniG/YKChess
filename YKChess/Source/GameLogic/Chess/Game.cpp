@@ -889,7 +889,7 @@ namespace yk
               Game::UpdateGameStatus((m_Turn == Side::Black) ? Side::White : Side::Black);
               if ((m_Turn == Side::Black) ? m_GameStatus.BlackCheck : m_GameStatus.WhiteCheck)
               {
-                m_BoardStatus = m_BoardStatusHistory[m_BoardStatusHistory.size() - 2];
+                m_BoardStatus = m_BoardStatusHistory.back();
                 m_BoardStatusHistory.pop_back();
                 m_NextMoveTile = 0ULL;
                 break;
