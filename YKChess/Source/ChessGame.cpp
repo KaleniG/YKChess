@@ -70,7 +70,7 @@ namespace yk
     bool m_IsRunning = true;
     bool m_IsMinimized = false;
 
-    std::unique_ptr<Chess::Game> m_ChessGame;
+    std::shared_ptr<Chess::Game> m_ChessGame;
   };
 }
 

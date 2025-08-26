@@ -2,6 +2,8 @@
 
 #include <vector>
 
+#include <glm/glm.hpp>
+
 #include "Core/KeyCodes.h"
 #include "Core/MouseCodes.h"
 
@@ -28,6 +30,7 @@ namespace yk
     virtual void OnMouseButtonRelease(MouseCode button) {}
     virtual void OnMouseScroll(double xoffset, double yoffset) {}
 
+    glm::uvec2 MouseNormalizedToPixel(double xpos, double ypos);
   private:
     void UpdateCallbacks();
 

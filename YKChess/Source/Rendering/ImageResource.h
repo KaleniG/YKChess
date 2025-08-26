@@ -14,6 +14,7 @@ namespace yk
   {
     std::array<glm::vec2, 4> UVCoordinates;
 
+    SubTexture() = default;
     SubTexture(const std::array<glm::vec2, 4>& uv)
       : UVCoordinates(uv) {}
   };

@@ -16,7 +16,7 @@ namespace yk
 
   struct alignas(16) Vertex
   {
-    glm::vec2 Position;
+    glm::vec3 Position;
     glm::vec2 UV;
     uint32_t ID;
 

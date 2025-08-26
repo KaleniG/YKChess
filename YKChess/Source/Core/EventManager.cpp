@@ -33,6 +33,23 @@ namespace yk
     }
   }
 
+  glm::uvec2 EventManager::MouseNormalizedToPixel(double xpos, double ypos)
+  {
+    glm::vec2 mousePos = glm::vec2(xpos, ypos);
+    glm::uvec2 winSize = WindowManager::GetWindowSize();
+    glm::uvec2 fbSize = WindowManager::GetFramebufferSize();
+
+    float scaleX = static_cast<float>(fbSize.x) / static_cast<float>(winSize.x);
+    float scaleY = static_cast<float>(fbSize.y) / static_cast<float>(winSize.y);
+
+    int32_t pixelX = std::clamp(static_cast<int32_t>(mousePos.x * scaleX), 0, static_cast<int32_t>(fbSize.x) - 1);
+    int32_t pixelY = std::clamp(static_cast<int32_t>(mousePos.y * scaleY), 0, static_cast<int32_t>(fbSize.y) - 1);
+
+    pixelY = fbSize.y - 1 - pixelY;
+
+    return glm::uvec2(pixelX, pixelY);
+  }
+
   void EventManager::UpdateCallbacks()
   {
     GLFWwindow* window = WindowManager::GetWindow();

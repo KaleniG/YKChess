@@ -48,11 +48,10 @@ namespace yk
     static void WaitIdle();
 
     static void SetImageSlot(uint32_t slot, std::shared_ptr<ImageResource> image);
-    static void DrawImage(glm::vec2 position, glm::vec2 size, uint32_t id, SubTexture subtexture);
+    static void DrawImage(glm::vec3 position, glm::vec3 size, uint32_t id, SubTexture subtexture);
     static void EndBatch();
     static void ResetBatch();
     static void DrawText(const std::string& text, glm::vec2 size, glm::vec2 position, glm::vec4 color, std::shared_ptr<FontResource> font);
-    static void UpdateIDFramebuffer();
     static uint32_t GetPositionID(glm::uvec2 position);
 
     static void Render();
@@ -75,8 +74,6 @@ namespace yk
 
   private:
     bool s_Initialized = false;
-
-    bool s_CaptureID = false;
 
     std::shared_ptr<Device> s_Device;
     std::shared_ptr<Swapchain> s_Swapchain;

@@ -157,7 +157,7 @@ namespace yk
 
       PipelineVertexInputState pInputState;
       pInputState.AddBinding(0, sizeof(Vertex), InputRate::Vertex);
-      pInputState.AddAttribute(0, VertexInputFormat::VEC2, offsetof(Vertex, Position));
+      pInputState.AddAttribute(0, VertexInputFormat::VEC3, offsetof(Vertex, Position));
       pInputState.AddAttribute(1, VertexInputFormat::VEC2, offsetof(Vertex, UV));
       pInputState.AddAttribute(2, VertexInputFormat::UINT, offsetof(Vertex, ID));
 
@@ -290,18 +290,18 @@ namespace yk
     }
   }
 
-  void Renderer::DrawImage(glm::vec2 position, glm::vec2 size, uint32_t id, SubTexture subtexture)
+  void Renderer::DrawImage(glm::vec3 position, glm::vec3 size, uint32_t id, SubTexture subtexture)
   {
     YK_ASSERT(Renderer::IsInitialized(), "The renderer hasn't been initialized yet");
 
     Renderer::Get().s_ObjectCount++;
 
-    std::array<glm::vec2, 4> vertices =
+    std::array<glm::vec3, 4> vertices =
     {
-       glm::vec2(-0.5f, -0.5f),
-       glm::vec2(0.5f, -0.5f),
-       glm::vec2(0.5f, 0.5f),
-       glm::vec2(-0.5f, 0.5f)
+       glm::vec3(-0.5f, -0.5f, 0.0f),
+       glm::vec3(0.5f, -0.5f, 0.0f),
+       glm::vec3(0.5f, 0.5f, 0.0f),
+       glm::vec3(-0.5f, 0.5f, 0.0f)
     };
 
     for (int i = 0; i < 4; i++)
@@ -321,7 +321,7 @@ namespace yk
 
     for (int i = 0; i < 6; i++)
     {
-      Renderer::Get().s_VertexBatchVector.reserve(6);
+      Renderer::Get().s_IndexBatchVector.reserve(6);
       Renderer::Get().s_IndexBatchVector.emplace_back(indices[i] + (4 * (Renderer::Get().s_ObjectCount - 1)));
     }
   }
@@ -348,12 +348,6 @@ namespace yk
   void Renderer::DrawText(const std::string& text, glm::vec2 size, glm::vec2 position, glm::vec4 color, std::shared_ptr<FontResource> font)
   {
     YK_ASSERT(Renderer::IsInitialized(), "The renderer hasn't been initialized yet");
-  }
-
-  void Renderer::UpdateIDFramebuffer()
-  {
-    YK_ASSERT(Renderer::IsInitialized(), "The renderer hasn't been initialized yet");
-    Renderer::Get().s_CaptureID = true;
   }
 
   uint32_t Renderer::GetPositionID(glm::uvec2 position)

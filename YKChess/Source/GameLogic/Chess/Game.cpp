@@ -1,1053 +1,874 @@
+﻿#include <bit>
+
+#include <YKLib.h>
+#include <glm/glm.hpp>
+
 #include "Core/WindowManager.h"
-#include "Core/Input.h"
 #include "GameLogic/Chess/Game.h"
 #include "Rendering/Renderer.h"
+
+// Macro removes the 0b prefix that cannot be 'd, easier to read this way
+#define b(number) 0b##number
+
+// Macros for pieces default positions
+#define BLACK_PAWNS_DEFAULT_POSITIONS   b(00000000'11111111'00000000'00000000'00000000'00000000'00000000'00000000)
+#define BLACK_ROOKS_DEFAULT_POSITIONS   b(10000001'00000000'00000000'00000000'00000000'00000000'00000000'00000000)
+#define BLACK_KNIGHTS_DEFAULT_POSITIONS b(01000010'00000000'00000000'00000000'00000000'00000000'00000000'00000000)
+#define BLACK_BISHOPS_DEFAULT_POSITIONS b(00100100'00000000'00000000'00000000'00000000'00000000'00000000'00000000)
+#define BLACK_QUEEN_DEFAULT_POSITION    b(00010000'00000000'00000000'00000000'00000000'00000000'00000000'00000000)
+#define BLACK_KING_DEFAULT_POSITION     b(00001000'00000000'00000000'00000000'00000000'00000000'00000000'00000000)
+
+#define WHITE_PAWNS_DEFAULT_POSITIONS   b(00000000'00000000'00000000'00000000'00000000'00000000'11111111'00000000)
+#define WHITE_ROOKS_DEFAULT_POSITIONS   b(00000000'00000000'00000000'00000000'00000000'00000000'00000000'10000001)
+#define WHITE_KNIGHTS_DEFAULT_POSITIONS b(00000000'00000000'00000000'00000000'00000000'00000000'00000000'01000010)
+#define WHITE_BISHOPS_DEFAULT_POSITIONS b(00000000'00000000'00000000'00000000'00000000'00000000'00000000'00100100)
+#define WHITE_QUEEN_DEFAULT_POSITION    b(00000000'00000000'00000000'00000000'00000000'00000000'00000000'00010000)
+#define WHITE_KING_DEFAULT_POSITION     b(00000000'00000000'00000000'00000000'00000000'00000000'00000000'00001000)
 
 namespace yk
 {
   namespace Chess
   {
-    std::unique_ptr<Game> Game::Create()
+    std::shared_ptr<Game> Game::Create()
     {
-      std::unique_ptr<Game> game = std::make_unique<Game>();
-
-      game->m_CurrentCursorPos = glm::ivec2(7, 7);
-
+      std::shared_ptr<Game> game(new Game());
+      game->SetPiecesDefaultPositions();
       game->m_ChessAtlas = ImageResource::Create("Assets/Textures/ChessAtlas.png", 24, 24);
       Renderer::SetImageSlot(1, game->m_ChessAtlas);
-
-      for (int32_t y = 0; y < 8; y++)
-        for (int32_t x = 0; x < 8; x++)
-          game->m_Board[x][y] = std::nullopt;
-
-      game->m_Board[0][0].emplace(Chess::Piece::Type::Rook, Side::Black);
-      game->m_Board[1][0].emplace(Chess::Piece::Type::Knight, Side::Black);
-      game->m_Board[2][0].emplace(Chess::Piece::Type::Bishop, Side::Black);
-      game->m_Board[3][0].emplace(Chess::Piece::Type::Queen, Side::Black);
-      game->m_Board[4][0].emplace(Chess::Piece::Type::King, Side::Black);
-      game->m_Board[5][0].emplace(Chess::Piece::Type::Bishop, Side::Black);
-      game->m_Board[6][0].emplace(Chess::Piece::Type::Knight, Side::Black);
-      game->m_Board[7][0].emplace(Chess::Piece::Type::Rook, Side::Black);
-
-      game->m_Board[0][1].emplace(Chess::Piece::Type::Pawn, Side::Black);
-      game->m_Board[1][1].emplace(Chess::Piece::Type::Pawn, Side::Black);
-      game->m_Board[2][1].emplace(Chess::Piece::Type::Pawn, Side::Black);
-      game->m_Board[3][1].emplace(Chess::Piece::Type::Pawn, Side::Black);
-      game->m_Board[4][1].emplace(Chess::Piece::Type::Pawn, Side::Black);
-      game->m_Board[5][1].emplace(Chess::Piece::Type::Pawn, Side::Black);
-      game->m_Board[6][1].emplace(Chess::Piece::Type::Pawn, Side::Black);
-      game->m_Board[7][1].emplace(Chess::Piece::Type::Pawn, Side::Black);
-
-      game->m_Board[0][6].emplace(Chess::Piece::Type::Pawn, Side::White);
-      game->m_Board[1][6].emplace(Chess::Piece::Type::Pawn, Side::White);
-      game->m_Board[2][6].emplace(Chess::Piece::Type::Pawn, Side::White);
-      game->m_Board[3][6].emplace(Chess::Piece::Type::Pawn, Side::White);
-      game->m_Board[4][6].emplace(Chess::Piece::Type::Pawn, Side::White);
-      game->m_Board[5][6].emplace(Chess::Piece::Type::Pawn, Side::White);
-      game->m_Board[6][6].emplace(Chess::Piece::Type::Pawn, Side::White);
-      game->m_Board[7][6].emplace(Chess::Piece::Type::Pawn, Side::White);
-
-      game->m_Board[0][7].emplace(Chess::Piece::Type::Rook, Side::White);
-      game->m_Board[1][7].emplace(Chess::Piece::Type::Knight, Side::White);
-      game->m_Board[2][7].emplace(Chess::Piece::Type::Bishop, Side::White);
-      game->m_Board[3][7].emplace(Chess::Piece::Type::Queen, Side::White);
-      game->m_Board[4][7].emplace(Chess::Piece::Type::King, Side::White);
-      game->m_Board[5][7].emplace(Chess::Piece::Type::Bishop, Side::White);
-      game->m_Board[6][7].emplace(Chess::Piece::Type::Knight, Side::White);
-      game->m_Board[7][7].emplace(Chess::Piece::Type::Rook, Side::White);
-
-      game->DrawBoard();
-      game->DrawPieces();
-      game->HoverCurrentTile();
+      game->DrawGame();
       Renderer::EndBatch();
-
       return game;
     }
 
-    void Game::HoverCurrentTile()
+    void Game::SetPiecesDefaultPositions()
     {
-      Renderer::DrawImage(glm::vec2(-0.7 + (0.2f * m_CurrentCursorPos.x), -0.7f + (0.2f * m_CurrentCursorPos.y)), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(15));
+      m_BoardStatus.BlackPawns = BLACK_PAWNS_DEFAULT_POSITIONS;
+      m_BoardStatus.BlackRooks = BLACK_ROOKS_DEFAULT_POSITIONS;
+      m_BoardStatus.BlackKnights = BLACK_KNIGHTS_DEFAULT_POSITIONS;
+      m_BoardStatus.BlackBishops = BLACK_BISHOPS_DEFAULT_POSITIONS;
+      m_BoardStatus.BlackQueens = BLACK_QUEEN_DEFAULT_POSITION;
+      m_BoardStatus.BlackKing = BLACK_KING_DEFAULT_POSITION;
 
-      TileInfo info = Game::GetTileInfo(m_CurrentCursorPos, false);
-
-      for (auto pos : info.PossiblePaths)
-      {
-        Renderer::DrawImage(glm::vec2(-0.7 + (0.2f * pos.x), -0.7f + (0.2f * pos.y)), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(15));
-      }
+      m_BoardStatus.WhitePawns = WHITE_PAWNS_DEFAULT_POSITIONS;
+      m_BoardStatus.WhiteRooks = WHITE_ROOKS_DEFAULT_POSITIONS;
+      m_BoardStatus.WhiteKnights = WHITE_KNIGHTS_DEFAULT_POSITIONS;
+      m_BoardStatus.WhiteBishops = WHITE_BISHOPS_DEFAULT_POSITIONS;
+      m_BoardStatus.WhiteQueens = WHITE_QUEEN_DEFAULT_POSITION;
+      m_BoardStatus.WhiteKing = WHITE_KING_DEFAULT_POSITION;
     }
 
-    bool Game::SelectCurrentTile()
+    Game::BoardBitField Game::GetFullBoard() const
     {
-      TileInfo info = Game::GetTileInfo(m_CurrentCursorPos, false);
-
-      if (!info.TilePiece.has_value() || info.PossiblePaths.empty())
-        return false;
-
-      m_SelectedTile = info;
-      m_CurrentStatus = Status::Selecting;
-      return true;
+      return Game::GetBlackPieces() | Game::GetWhitePieces();
     }
 
-    TileInfo Game::GetTileInfo(glm::ivec2 tile_pos, bool check_test) const
+    Game::BoardBitField Game::GetBlackPieces() const
     {
-      if (!m_Board[tile_pos.x][tile_pos.y].has_value())
-        return {};
+      return m_BoardStatus.BlackPawns | m_BoardStatus.BlackRooks | m_BoardStatus.BlackKnights | m_BoardStatus.BlackBishops | m_BoardStatus.BlackQueens | m_BoardStatus.BlackKing;
+    }
 
-      if (m_Board[tile_pos.x][tile_pos.y]->GetSide() != m_Turn && !check_test)
-        return {};
+    Game::BoardBitField Game::GetWhitePieces() const
+    {
+      return m_BoardStatus.WhitePawns | m_BoardStatus.WhiteRooks | m_BoardStatus.WhiteKnights | m_BoardStatus.WhiteBishops | m_BoardStatus.WhiteQueens | m_BoardStatus.WhiteKing;
+    }
 
-      TileInfo tileInfo;
-      tileInfo.TilePiece = m_Board[tile_pos.x][tile_pos.y];
+    Game::BoardBitField Game::GetPosition(int32_t row, int32_t col) const
+    {
+      YK_ASSERT(row < 8 && row >= 0 && col < 8 && col >= 0, "Trying to access a value outside of limits: row={} col={}", row, col);
+      return 1ULL << (((7 - row) * 8) + (7 - col));
+    }
 
-      switch (tileInfo.TilePiece->GetType())
+    std::tuple<int32_t, int32_t> Game::GetPosition(BoardBitField tile) const
+    {
+      YK_ASSERT(tile != 0 && (tile & (tile - 1)) == 0, "Tile must have exactly one bit set");
+
+      int32_t index = static_cast<int32_t>(std::countr_zero(tile));
+
+      int32_t row = static_cast<int32_t>(7 - (index / 8));
+      int32_t col = static_cast<int32_t>(7 - (index % 8));
+
+      return { row, col };
+    }
+
+    std::tuple<Game::Piece, Game::Side> Game::AccessTile(BoardBitField tile) const
+    {
+      YK_ASSERT(tile != 0 && (tile & (tile - 1)) == 0, "Tile must have exactly one bit set");
+
+      if (m_BoardStatus.BlackPawns & tile)   return { Piece::Pawn,   Side::Black };
+      if (m_BoardStatus.BlackRooks & tile)   return { Piece::Rook,   Side::Black };
+      if (m_BoardStatus.BlackKnights & tile) return { Piece::Knight, Side::Black };
+      if (m_BoardStatus.BlackBishops & tile) return { Piece::Bishop, Side::Black };
+      if (m_BoardStatus.BlackQueens & tile)  return { Piece::Queen,  Side::Black };
+      if (m_BoardStatus.BlackKing & tile)    return { Piece::King,   Side::Black };
+
+      if (m_BoardStatus.WhitePawns & tile)   return { Piece::Pawn,   Side::White };
+      if (m_BoardStatus.WhiteRooks & tile)   return { Piece::Rook,   Side::White };
+      if (m_BoardStatus.WhiteKnights & tile) return { Piece::Knight, Side::White };
+      if (m_BoardStatus.WhiteBishops & tile) return { Piece::Bishop, Side::White };
+      if (m_BoardStatus.WhiteQueens & tile)  return { Piece::Queen,  Side::White };
+      if (m_BoardStatus.WhiteKing & tile)    return { Piece::King,   Side::White };
+
+      return { Piece::None, Side::None };
+    }
+
+    std::tuple<Game::Piece, Game::Side> Game::AccessTile(int32_t row, int32_t col) const
+    {
+      return Game::AccessTile(Game::GetPosition(row, col));
+    }
+
+    Game::BoardBitField Game::GetPieceMoves(BoardBitField tile, bool attacks) const
+    {
+      BoardBitField moves = 0ULL;
+
+      const auto [piece, side] = Game::AccessTile(tile);
+      const auto [row, col] = Game::GetPosition(tile);
+
+      switch (piece)
       {
-      case Piece::Type::Pawn:
+      case Piece::None:
       {
-        if (m_Turn == Side::White)
-        {
-          if (tile_pos.y == 6 && tile_pos.y - 2 >= 0 && !m_Board[tile_pos.x][tile_pos.y - 1].has_value() && !m_Board[tile_pos.x][tile_pos.y - 2].has_value())
-            tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x, tile_pos.y - 2));
-
-          if (tile_pos.y - 1 >= 0)
-            if (!m_Board[tile_pos.x][tile_pos.y - 1].has_value())
-              tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x, tile_pos.y - 1));
-
-          if (tile_pos.x + 1 < 8 && tile_pos.y - 1 >= 0)
-            if (m_Board[tile_pos.x + 1][tile_pos.y - 1].has_value() && (m_Board[tile_pos.x + 1][tile_pos.y - 1]->GetSide() != m_Turn || check_test))
-              tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x + 1, tile_pos.y - 1));
-
-          if (tile_pos.x - 1 >= 0 && tile_pos.y - 1 >= 0)
-            if (m_Board[tile_pos.x - 1][tile_pos.y - 1].has_value() && (m_Board[tile_pos.x - 1][tile_pos.y - 1]->GetSide() != m_Turn || check_test))
-            tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x - 1, tile_pos.y - 1));
-        }
-        else
-        {
-          if (tile_pos.y == 1 && tile_pos.y + 2 < 8 && !m_Board[tile_pos.x][tile_pos.y + 1].has_value() && !m_Board[tile_pos.x][tile_pos.y + 2].has_value())
-            tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x, tile_pos.y + 2));
-
-          if (tile_pos.y + 1 < 8)
-            if (!m_Board[tile_pos.x][tile_pos.y + 1].has_value())
-              tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x, tile_pos.y + 1));
-
-          if (tile_pos.x + 1 < 8 && tile_pos.y + 1 < 8)
-            if (m_Board[tile_pos.x + 1][tile_pos.y + 1].has_value() && (m_Board[tile_pos.x + 1][tile_pos.y + 1]->GetSide() != m_Turn || check_test))
-              tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x + 1, tile_pos.y + 1));
-
-          if (tile_pos.x - 1 >= 0 && tile_pos.y + 1 < 8)
-            if (m_Board[tile_pos.x - 1][tile_pos.y + 1].has_value() && (m_Board[tile_pos.x - 1][tile_pos.y + 1]->GetSide() != m_Turn || check_test))
-              tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x - 1, tile_pos.y + 1));
-        }
         break;
       }
-      case Piece::Type::Rook:
+      case Piece::Pawn:
       {
-        for (int32_t x = tile_pos.x + 1; x < 8; x++)
+        switch (side)
         {
-          if (m_Board[x][tile_pos.y].has_value())
-          {
-            if (m_Board[x][tile_pos.y]->GetSide() != m_Turn || check_test)
-              tileInfo.PossiblePaths.push_back(glm::ivec2(x, tile_pos.y));
-            break;
-          }
-          tileInfo.PossiblePaths.push_back(glm::ivec2(x, tile_pos.y));
-        }
-
-        for (int32_t x = tile_pos.x - 1; x >= 0; x--)
+        case Side::Black:
         {
-          if (m_Board[x][tile_pos.y].has_value())
+          if (row + 1 < 8)
+            if (!(Game::GetFullBoard() & Game::GetPosition(row + 1, col)))
+              moves |= Game::GetPosition(row + 1, col);
+
+          if (attacks)
           {
-            if (m_Board[x][tile_pos.y]->GetSide() != m_Turn || check_test)
-              tileInfo.PossiblePaths.push_back(glm::ivec2(x, tile_pos.y));
-            break;
-          }
-          tileInfo.PossiblePaths.push_back(glm::ivec2(x, tile_pos.y));
-        }
+            if (row + 1 < 8 && col - 1 >= 0)
+              if (Game::GetWhitePieces() & Game::GetPosition(row + 1, col - 1))
+                moves |= Game::GetPosition(row + 1, col - 1);
 
-        for (int32_t y = tile_pos.y + 1; y < 8; y++)
-        {
-          if (m_Board[tile_pos.x][y].has_value())
-          {
-            if (m_Board[tile_pos.x][y]->GetSide() != m_Turn || check_test)
-              tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x, y));
-            break;
-          }
-          tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x, y));
-        }
-
-        for (int32_t y = tile_pos.y - 1; y >= 0; y--)
-        {
-          if (m_Board[tile_pos.x][y].has_value())
-          {
-            if (m_Board[tile_pos.x][y]->GetSide() != m_Turn || check_test)
-              tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x, y));
-            break;
-          }
-          tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x, y));
-        }
-
-        break;
-      }
-      case Piece::Type::Knight:
-      {
-        glm::ivec2 tileKnightNextPos = tile_pos;
-
-        tileKnightNextPos.x += 2;
-        tileKnightNextPos.y += 1;
-
-        if (tileKnightNextPos.x < 8 && tileKnightNextPos.y < 8)
-        {
-          if (m_Board[tileKnightNextPos.x][tileKnightNextPos.y].has_value())
-          {
-            if (m_Board[tileKnightNextPos.x][tileKnightNextPos.y]->GetSide() != m_Turn || check_test)
-              tileInfo.PossiblePaths.push_back(tileKnightNextPos);
-          }
-          else
-            tileInfo.PossiblePaths.push_back(tileKnightNextPos);
-        }
-
-        tileKnightNextPos = tile_pos;
-
-        tileKnightNextPos.x += 2;
-        tileKnightNextPos.y -= 1;
-
-        if (tileKnightNextPos.x < 8 && tileKnightNextPos.y >= 0)
-        {
-          if (m_Board[tileKnightNextPos.x][tileKnightNextPos.y].has_value())
-          {
-            if (m_Board[tileKnightNextPos.x][tileKnightNextPos.y]->GetSide() != m_Turn || check_test)
-              tileInfo.PossiblePaths.push_back(tileKnightNextPos);
-          }
-          else
-            tileInfo.PossiblePaths.push_back(tileKnightNextPos);
-        }
-
-        tileKnightNextPos = tile_pos;
-
-        tileKnightNextPos.x -= 2;
-        tileKnightNextPos.y += 1;
-
-        if (tileKnightNextPos.x >= 0 && tileKnightNextPos.y < 8)
-        {
-          if (m_Board[tileKnightNextPos.x][tileKnightNextPos.y].has_value())
-          {
-            if (m_Board[tileKnightNextPos.x][tileKnightNextPos.y]->GetSide() != m_Turn || check_test)
-              tileInfo.PossiblePaths.push_back(tileKnightNextPos);
-          }
-          else
-            tileInfo.PossiblePaths.push_back(tileKnightNextPos);
-        }
-
-        tileKnightNextPos = tile_pos;
-
-        tileKnightNextPos.x -= 2;
-        tileKnightNextPos.y -= 1;
-
-        if (tileKnightNextPos.x >= 0 && tileKnightNextPos.y >= 0)
-        {
-          if (m_Board[tileKnightNextPos.x][tileKnightNextPos.y].has_value())
-          {
-            if (m_Board[tileKnightNextPos.x][tileKnightNextPos.y]->GetSide() != m_Turn || check_test)
-              tileInfo.PossiblePaths.push_back(tileKnightNextPos);
-          }
-          else
-            tileInfo.PossiblePaths.push_back(tileKnightNextPos);
-        } 
-
-        tileKnightNextPos = tile_pos;
-
-        tileKnightNextPos.x += 1;
-        tileKnightNextPos.y += 2;
-
-        if (tileKnightNextPos.x < 8 && tileKnightNextPos.y < 8)
-        {
-          if (m_Board[tileKnightNextPos.x][tileKnightNextPos.y].has_value())
-          {
-            if (m_Board[tileKnightNextPos.x][tileKnightNextPos.y]->GetSide() != m_Turn || check_test)
-              tileInfo.PossiblePaths.push_back(tileKnightNextPos);
-          }
-          else
-            tileInfo.PossiblePaths.push_back(tileKnightNextPos);
-        }
-
-        tileKnightNextPos = tile_pos;
-
-        tileKnightNextPos.x += 1;
-        tileKnightNextPos.y -= 2;
-
-        if (tileKnightNextPos.x < 8 && tileKnightNextPos.y >= 0)
-        {
-          if (m_Board[tileKnightNextPos.x][tileKnightNextPos.y].has_value())
-          {
-            if (m_Board[tileKnightNextPos.x][tileKnightNextPos.y]->GetSide() != m_Turn || check_test)
-              tileInfo.PossiblePaths.push_back(tileKnightNextPos);
-          }
-          else
-            tileInfo.PossiblePaths.push_back(tileKnightNextPos);
-        }
-
-        tileKnightNextPos = tile_pos;
-
-        tileKnightNextPos.x -= 1;
-        tileKnightNextPos.y += 2;
-
-        if (tileKnightNextPos.x >= 0 && tileKnightNextPos.y < 8)
-        {
-          if (m_Board[tileKnightNextPos.x][tileKnightNextPos.y].has_value())
-          {
-            if (m_Board[tileKnightNextPos.x][tileKnightNextPos.y]->GetSide() != m_Turn || check_test)
-              tileInfo.PossiblePaths.push_back(tileKnightNextPos);
-          }
-          else
-            tileInfo.PossiblePaths.push_back(tileKnightNextPos);
-        }
-
-        tileKnightNextPos = tile_pos;
-
-        tileKnightNextPos.x -= 1;
-        tileKnightNextPos.y -= 2;
-
-        if (tileKnightNextPos.x >= 0 && tileKnightNextPos.y >= 0)
-        {
-          if (m_Board[tileKnightNextPos.x][tileKnightNextPos.y].has_value())
-          {
-            if (m_Board[tileKnightNextPos.x][tileKnightNextPos.y]->GetSide() != m_Turn || check_test)
-              tileInfo.PossiblePaths.push_back(tileKnightNextPos);
-          }
-          else
-            tileInfo.PossiblePaths.push_back(tileKnightNextPos);
-        }
-
-        break;
-      }
-      case Piece::Type::Bishop:
-      {
-        glm::ivec2 tileBishopNextPos = tile_pos;
-
-        tileBishopNextPos.x++;
-        tileBishopNextPos.y++;
-
-        while (tileBishopNextPos.x < 8 && tileBishopNextPos.y < 8)
-        {
-          if (m_Board[tileBishopNextPos.x][tileBishopNextPos.y].has_value())
-          {
-            if (m_Board[tileBishopNextPos.x][tileBishopNextPos.y]->GetSide() != m_Turn || check_test)
-              tileInfo.PossiblePaths.push_back(tileBishopNextPos);
-            break;
+            if (row + 1 < 8 && col + 1 < 8)
+              if (Game::GetWhitePieces() & Game::GetPosition(row + 1, col + 1))
+                moves |= Game::GetPosition(row + 1, col + 1);
           }
 
-          tileInfo.PossiblePaths.push_back(tileBishopNextPos);
+          if (tile & BLACK_PAWNS_DEFAULT_POSITIONS && row + 2 < 8)
+            if (!(Game::GetFullBoard() & (Game::GetPosition(row + 1, col) | Game::GetPosition(row + 2, col))))
+              moves |= Game::GetPosition(row + 2, col);
 
-          tileBishopNextPos.x++;
-          tileBishopNextPos.y++;
-        }
-
-        tileBishopNextPos = tile_pos;
-
-        tileBishopNextPos.x++;
-        tileBishopNextPos.y--;
-
-        while (tileBishopNextPos.x < 8 && tileBishopNextPos.y >= 0)
-        {
-          if (m_Board[tileBishopNextPos.x][tileBishopNextPos.y].has_value())
-          {
-            if (m_Board[tileBishopNextPos.x][tileBishopNextPos.y]->GetSide() != m_Turn || check_test)
-              tileInfo.PossiblePaths.push_back(tileBishopNextPos);
-            break;
-          }
-
-          tileInfo.PossiblePaths.push_back(tileBishopNextPos);
-
-          tileBishopNextPos.x++;
-          tileBishopNextPos.y--;
-        }
-
-        tileBishopNextPos = tile_pos;
-
-        tileBishopNextPos.x--;
-        tileBishopNextPos.y--;
-
-        while (tileBishopNextPos.x >= 0 && tileBishopNextPos.y >= 0)
-        {
-          if (m_Board[tileBishopNextPos.x][tileBishopNextPos.y].has_value())
-          {
-            if (m_Board[tileBishopNextPos.x][tileBishopNextPos.y]->GetSide() != m_Turn || check_test)
-              tileInfo.PossiblePaths.push_back(tileBishopNextPos);
-            break;
-          }
-
-          tileInfo.PossiblePaths.push_back(tileBishopNextPos);
-
-          tileBishopNextPos.x--;
-          tileBishopNextPos.y--;
-        }
-
-        tileBishopNextPos = tile_pos;
-
-        tileBishopNextPos.x--;
-        tileBishopNextPos.y++;
-
-        while (tileBishopNextPos.x >= 0 && tileBishopNextPos.y < 8)
-        {
-          if (m_Board[tileBishopNextPos.x][tileBishopNextPos.y].has_value())
-          {
-            if (m_Board[tileBishopNextPos.x][tileBishopNextPos.y]->GetSide() != m_Turn || check_test)
-              tileInfo.PossiblePaths.push_back(tileBishopNextPos);
-            break;
-          }
-
-          tileInfo.PossiblePaths.push_back(tileBishopNextPos);
-
-          tileBishopNextPos.x--;
-          tileBishopNextPos.y++;
-        }
-
-        break;
-      }
-      case Piece::Type::King:
-      {
-        if (tile_pos.x + 1 < 8)
-        {
-          if (m_Board[tile_pos.x + 1][tile_pos.y].has_value() && (m_Board[tile_pos.x + 1][tile_pos.y]->GetSide() != m_Turn || check_test))
-            tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x + 1, tile_pos.y));
-          else if (!m_Board[tile_pos.x + 1][tile_pos.y].has_value())
-            tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x + 1, tile_pos.y));
-
-          if (tile_pos.y + 1 < 8)
-          {
-            if (m_Board[tile_pos.x + 1][tile_pos.y + 1].has_value() && (m_Board[tile_pos.x + 1][tile_pos.y + 1]->GetSide() != m_Turn || check_test))
-              tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x + 1, tile_pos.y + 1));
-            else if (!m_Board[tile_pos.x + 1][tile_pos.y + 1].has_value())
-              tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x + 1, tile_pos.y + 1));
-          }
-
-          if (tile_pos.y - 1 >= 0)
-          {
-            if (m_Board[tile_pos.x + 1][tile_pos.y - 1].has_value() && (m_Board[tile_pos.x + 1][tile_pos.y - 1]->GetSide() != m_Turn || check_test))
-              tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x + 1, tile_pos.y - 1));
-            else if (!m_Board[tile_pos.x + 1][tile_pos.y - 1].has_value())
-              tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x + 1, tile_pos.y - 1));
-          }
-        }
-        if (tile_pos.x - 1 >= 0)
-        {
-          if (m_Board[tile_pos.x - 1][tile_pos.y].has_value() && (m_Board[tile_pos.x - 1][tile_pos.y]->GetSide() != m_Turn || check_test))
-            tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x - 1, tile_pos.y));
-          else if (!m_Board[tile_pos.x - 1][tile_pos.y].has_value())
-            tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x - 1, tile_pos.y));
-
-          if (tile_pos.y + 1 < 8)
-          {
-            if (m_Board[tile_pos.x - 1][tile_pos.y + 1].has_value() && (m_Board[tile_pos.x - 1][tile_pos.y + 1]->GetSide() != m_Turn || check_test))
-              tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x - 1, tile_pos.y + 1));
-            else if (!m_Board[tile_pos.x - 1][tile_pos.y + 1].has_value())
-              tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x - 1, tile_pos.y + 1));
-          }
-
-          if (tile_pos.y - 1 >= 0)
-          {
-            if (m_Board[tile_pos.x - 1][tile_pos.y - 1].has_value() && (m_Board[tile_pos.x - 1][tile_pos.y - 1]->GetSide() != m_Turn || check_test))
-              tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x - 1, tile_pos.y - 1));
-            else if (!m_Board[tile_pos.x - 1][tile_pos.y - 1].has_value())
-              tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x - 1, tile_pos.y - 1));
-          }
-        }
-        if (tile_pos.y + 1 < 8)
-        {
-          if (m_Board[tile_pos.x][tile_pos.y + 1].has_value() && (m_Board[tile_pos.x][tile_pos.y + 1]->GetSide() != m_Turn || check_test))
-            tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x, tile_pos.y + 1));
-          else if (!m_Board[tile_pos.x][tile_pos.y + 1].has_value())
-            tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x, tile_pos.y + 1));
-        }
-        if (tile_pos.y - 1 >= 0)
-        {
-          if (m_Board[tile_pos.x][tile_pos.y - 1].has_value() && (m_Board[tile_pos.x][tile_pos.y - 1]->GetSide() != m_Turn || check_test))
-            tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x, tile_pos.y - 1));
-          else if (!m_Board[tile_pos.x][tile_pos.y - 1].has_value())
-            tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x, tile_pos.y - 1));
-        }
-        break;
-      }
-      case Piece::Type::Queen:
-      {
-        glm::ivec2 tileBishopNextPos = tile_pos;
-
-        tileBishopNextPos.x++;
-        tileBishopNextPos.y++;
-
-        while (tileBishopNextPos.x < 8 && tileBishopNextPos.y < 8)
-        {
-          if (m_Board[tileBishopNextPos.x][tileBishopNextPos.y].has_value())
-          {
-            if (m_Board[tileBishopNextPos.x][tileBishopNextPos.y]->GetSide() != m_Turn || check_test)
-              tileInfo.PossiblePaths.push_back(tileBishopNextPos);
-            break;
-          }
-
-          tileInfo.PossiblePaths.push_back(tileBishopNextPos);
-
-          tileBishopNextPos.x++;
-          tileBishopNextPos.y++;
-        }
-
-        tileBishopNextPos = tile_pos;
-
-        tileBishopNextPos.x++;
-        tileBishopNextPos.y--;
-
-        while (tileBishopNextPos.x < 8 && tileBishopNextPos.y >= 0)
-        {
-          if (m_Board[tileBishopNextPos.x][tileBishopNextPos.y].has_value())
-          {
-            if (m_Board[tileBishopNextPos.x][tileBishopNextPos.y]->GetSide() != m_Turn || check_test)
-              tileInfo.PossiblePaths.push_back(tileBishopNextPos);
-            break;
-          }
-
-          tileInfo.PossiblePaths.push_back(tileBishopNextPos);
-
-          tileBishopNextPos.x++;
-          tileBishopNextPos.y--;
-        }
-
-        tileBishopNextPos = tile_pos;
-
-        tileBishopNextPos.x--;
-        tileBishopNextPos.y--;
-
-        while (tileBishopNextPos.x >= 0 && tileBishopNextPos.y >= 0)
-        {
-          if (m_Board[tileBishopNextPos.x][tileBishopNextPos.y].has_value())
-          {
-            if (m_Board[tileBishopNextPos.x][tileBishopNextPos.y]->GetSide() != m_Turn || check_test)
-              tileInfo.PossiblePaths.push_back(tileBishopNextPos);
-            break;
-          }
-
-          tileInfo.PossiblePaths.push_back(tileBishopNextPos);
-
-          tileBishopNextPos.x--;
-          tileBishopNextPos.y--;
-        }
-
-        tileBishopNextPos = tile_pos;
-
-        tileBishopNextPos.x--;
-        tileBishopNextPos.y++;
-
-        while (tileBishopNextPos.x >= 0 && tileBishopNextPos.y < 8)
-        {
-          if (m_Board[tileBishopNextPos.x][tileBishopNextPos.y].has_value())
-          {
-            if (m_Board[tileBishopNextPos.x][tileBishopNextPos.y]->GetSide() != m_Turn || check_test)
-              tileInfo.PossiblePaths.push_back(tileBishopNextPos);
-            break;
-          }
-
-          tileInfo.PossiblePaths.push_back(tileBishopNextPos);
-
-          tileBishopNextPos.x--;
-          tileBishopNextPos.y++;
-        }
-
-        for (int32_t x = tile_pos.x + 1; x < 8; x++)
-        {
-          if (m_Board[x][tile_pos.y].has_value())
-          {
-            if (m_Board[x][tile_pos.y]->GetSide() != m_Turn || check_test)
-              tileInfo.PossiblePaths.push_back(glm::ivec2(x, tile_pos.y));
-            break;
-          }
-          tileInfo.PossiblePaths.push_back(glm::ivec2(x, tile_pos.y));
-        }
-
-        for (int32_t x = tile_pos.x - 1; x >= 0; x--)
-        {
-          if (m_Board[x][tile_pos.y].has_value())
-          {
-            if (m_Board[x][tile_pos.y]->GetSide() != m_Turn || check_test)
-              tileInfo.PossiblePaths.push_back(glm::ivec2(x, tile_pos.y));
-            break;
-          }
-          tileInfo.PossiblePaths.push_back(glm::ivec2(x, tile_pos.y));
-        }
-
-        for (int32_t y = tile_pos.y + 1; y < 8; y++)
-        {
-          if (m_Board[tile_pos.x][y].has_value())
-          {
-            if (m_Board[tile_pos.x][y]->GetSide() != m_Turn || check_test)
-              tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x, y));
-            break;
-          }
-          tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x, y));
-        }
-
-        for (int32_t y = tile_pos.y - 1; y >= 0; y--)
-        {
-          if (m_Board[tile_pos.x][y].has_value())
-          {
-            if (m_Board[tile_pos.x][y]->GetSide() != m_Turn || check_test)
-              tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x, y));
-            break;
-          }
-          tileInfo.PossiblePaths.push_back(glm::ivec2(tile_pos.x, y));
-        }
-
-        break;
-      }
-      }
-
-      return tileInfo;
-    }
-
-    std::optional<glm::ivec2> Game::FindKing(Side side) const
-    {
-      for (int y = 0; y < 8; y++)
-      {
-        for (int x = 0; x < 8; x++)
-        {
-          const auto& pieceOpt = m_Board[x][y];
-          if (pieceOpt.has_value())
-          {
-            const Piece& piece = *pieceOpt;
-            if (piece.GetSide() == side && piece.GetType() == Piece::Type::King)
-            {
-              return glm::ivec2{ x, y };
-            }
-          }
-        }
-      }
-      return std::nullopt;
-    }
-
-    bool Game::IsSquareAttacked(glm::ivec2 square, Side attacker) const
-    {
-      // Loop through all pieces of the attacker side
-      for (int y = 0; y < 8; y++)
-      {
-        for (int x = 0; x < 8; x++)
-        {
-          auto pieceOpt = m_Board[x][y];
-          if (!pieceOpt.has_value()) continue;
-
-          const Piece& piece = pieceOpt.value();
-          if (piece.GetSide() != attacker) continue;
-
-          // Get pseudo-legal moves for this piece
-          TileInfo info = Game::GetTileInfo({ x, y }, true);
-          for (auto& move : info.PossiblePaths)
-          {
-            if (move == square)
-              return true;
-          }
-        }
-      }
-      return false;
-    }
-
-    bool Game::IsInCheck(Side side) const
-    {
-      std::optional<glm::ivec2> kingPos = Game::FindKing(side);
-
-      if (kingPos == std::nullopt)
-        return false;
-
-      Side opponent = (side == Side::White) ? Side::Black : Side::White;
-      return Game::IsSquareAttacked(kingPos.value(), opponent);
-    }
-
-    bool Game::IsCheckmate(Side side)
-    {
-      if (!Game::IsInCheck(side))
-        return false; // Not in check, so can't be checkmate
-
-      // Try all possible moves
-      for (int y = 0; y < 8; y++)
-      {
-        for (int x = 0; x < 8; x++)
-        {
-          auto pieceOpt = m_Board[x][y];
-          if (!pieceOpt.has_value()) continue;
-
-          const Piece& piece = pieceOpt.value();
-          if (piece.GetSide() != side) continue;
-
-          TileInfo info = Game::GetTileInfo({ x, y }, false);
-          for (auto& move : info.PossiblePaths)
-          {
-            // Copy board to simulate
-            auto backup = m_Board;
-            m_Board[move.x][move.y] = m_Board[x][y];
-            m_Board[x][y].reset();
-
-            bool stillInCheck = Game::IsInCheck(side);
-
-            // Restore board
-            m_Board = backup;
-
-            if (!stillInCheck)
-              return false; // Found a move that avoids check
-          }
-        }
-      }
-
-      return true; // No escape, checkmate
-    }
-
-    void Game::DrawBoard()
-    {
-      Renderer::DrawImage(glm::vec2(-0.793f, -0.9f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(24)); // Corner
-      Renderer::DrawImage(glm::vec2(-0.7f, -0.9f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(16)); // Letter a (Border)
-      Renderer::DrawImage(glm::vec2(-0.5f, -0.9f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(17)); // Letter b (Border)
-      Renderer::DrawImage(glm::vec2(-0.3f, -0.9f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(18)); // Letter c (Border)
-      Renderer::DrawImage(glm::vec2(-0.1f, -0.9f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(19)); // Letter d (Border)
-      Renderer::DrawImage(glm::vec2(0.1f, -0.9f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(20)); // Letter e (Border)
-      Renderer::DrawImage(glm::vec2(0.3f, -0.9f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(21)); // Letter f (Border)
-      Renderer::DrawImage(glm::vec2(0.5f, -0.9f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(22)); // Letter g (Border)
-      Renderer::DrawImage(glm::vec2(0.7f, -0.9f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(23)); // Letter h (Border)
-      Renderer::DrawImage(glm::vec2(0.9f, -0.9f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(24)); // Corner
-
-      Renderer::DrawImage(glm::vec2(-0.793f, -0.7f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(25)); // Number 1 (Border)
-      Renderer::DrawImage(glm::vec2(-0.7f, -0.7f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(1)); // White
-      Renderer::DrawImage(glm::vec2(-0.5f, -0.7f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(0)); // Black
-      Renderer::DrawImage(glm::vec2(-0.3f, -0.7f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(1)); // White
-      Renderer::DrawImage(glm::vec2(-0.1f, -0.7f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(0)); // Black
-      Renderer::DrawImage(glm::vec2(0.1f, -0.7f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(1)); // White
-      Renderer::DrawImage(glm::vec2(0.3f, -0.7f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(0)); // Black
-      Renderer::DrawImage(glm::vec2(0.5f, -0.7f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(1)); // White
-      Renderer::DrawImage(glm::vec2(0.7f, -0.7f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(0)); // Black
-      Renderer::DrawImage(glm::vec2(0.9f, -0.7f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(25)); // Number 1 (Border)
-
-      Renderer::DrawImage(glm::vec2(-0.793f, -0.5f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(26)); // Number 2 (Border)
-      Renderer::DrawImage(glm::vec2(-0.7f, -0.5f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(0)); // Black
-      Renderer::DrawImage(glm::vec2(-0.5f, -0.5f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(1)); // White
-      Renderer::DrawImage(glm::vec2(-0.3f, -0.5f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(0)); // Black
-      Renderer::DrawImage(glm::vec2(-0.1f, -0.5f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(1)); // White
-      Renderer::DrawImage(glm::vec2(0.1f, -0.5f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(0)); // Black
-      Renderer::DrawImage(glm::vec2(0.3f, -0.5f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(1)); // White
-      Renderer::DrawImage(glm::vec2(0.5f, -0.5f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(0)); // Black
-      Renderer::DrawImage(glm::vec2(0.7f, -0.5f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(1)); // White
-      Renderer::DrawImage(glm::vec2(0.9f, -0.5f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(26)); // Number 2 (Border)
-
-      Renderer::DrawImage(glm::vec2(-0.793f, -0.3f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(27)); // Number 3 (Border)
-      Renderer::DrawImage(glm::vec2(-0.7f, -0.3f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(1)); // White
-      Renderer::DrawImage(glm::vec2(-0.5f, -0.3f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(0)); // Black
-      Renderer::DrawImage(glm::vec2(-0.3f, -0.3f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(1)); // White
-      Renderer::DrawImage(glm::vec2(-0.1f, -0.3f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(0)); // Black
-      Renderer::DrawImage(glm::vec2(0.1f, -0.3f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(1)); // White
-      Renderer::DrawImage(glm::vec2(0.3f, -0.3f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(0)); // Black
-      Renderer::DrawImage(glm::vec2(0.5f, -0.3f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(1)); // White
-      Renderer::DrawImage(glm::vec2(0.7f, -0.3f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(0)); // Black
-      Renderer::DrawImage(glm::vec2(0.9f, -0.3f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(27)); // Number 3 (Border)
-
-      Renderer::DrawImage(glm::vec2(-0.793f, -0.1f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(28)); // Number 4 (Border)
-      Renderer::DrawImage(glm::vec2(-0.7f, -0.1f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(0)); // Black
-      Renderer::DrawImage(glm::vec2(-0.5f, -0.1f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(1)); // White
-      Renderer::DrawImage(glm::vec2(-0.3f, -0.1f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(0)); // Black
-      Renderer::DrawImage(glm::vec2(-0.1f, -0.1f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(1)); // White
-      Renderer::DrawImage(glm::vec2(0.1f, -0.1f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(0)); // Black
-      Renderer::DrawImage(glm::vec2(0.3f, -0.1f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(1)); // White
-      Renderer::DrawImage(glm::vec2(0.5f, -0.1f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(0)); // Black
-      Renderer::DrawImage(glm::vec2(0.7f, -0.1f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(1)); // White
-      Renderer::DrawImage(glm::vec2(0.9f, -0.1f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(28)); // Number 4 (Border)
-
-      Renderer::DrawImage(glm::vec2(-0.793f, 0.1f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(29)); // Number 5 (Border)
-      Renderer::DrawImage(glm::vec2(-0.7f, 0.1f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(1)); // White
-      Renderer::DrawImage(glm::vec2(-0.5f, 0.1f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(0)); // Black
-      Renderer::DrawImage(glm::vec2(-0.3f, 0.1f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(1)); // White
-      Renderer::DrawImage(glm::vec2(-0.1f, 0.1f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(0)); // Black
-      Renderer::DrawImage(glm::vec2(0.1f, 0.1f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(1)); // White
-      Renderer::DrawImage(glm::vec2(0.3f, 0.1f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(0)); // Black
-      Renderer::DrawImage(glm::vec2(0.5f, 0.1f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(1)); // White
-      Renderer::DrawImage(glm::vec2(0.7f, 0.1f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(0)); // Black
-      Renderer::DrawImage(glm::vec2(0.9f, 0.1f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(29)); // Number 5 (Border)
-
-      Renderer::DrawImage(glm::vec2(-0.793f, 0.3f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(30)); // Number 6 (Border)
-      Renderer::DrawImage(glm::vec2(-0.7f, 0.3f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(0)); // Black
-      Renderer::DrawImage(glm::vec2(-0.5f, 0.3f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(1)); // White
-      Renderer::DrawImage(glm::vec2(-0.3f, 0.3f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(0)); // Black
-      Renderer::DrawImage(glm::vec2(-0.1f, 0.3f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(1)); // White
-      Renderer::DrawImage(glm::vec2(0.1f, 0.3f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(0)); // Black
-      Renderer::DrawImage(glm::vec2(0.3f, 0.3f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(1)); // White
-      Renderer::DrawImage(glm::vec2(0.5f, 0.3f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(0)); // Black
-      Renderer::DrawImage(glm::vec2(0.7f, 0.3f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(1)); // White
-      Renderer::DrawImage(glm::vec2(0.9f, 0.3f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(30)); // Number 6 (Border)
-
-      Renderer::DrawImage(glm::vec2(-0.793f, 0.5f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(31)); // Number 7 (Border)
-      Renderer::DrawImage(glm::vec2(-0.7f, 0.5f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(1)); // White
-      Renderer::DrawImage(glm::vec2(-0.5f, 0.5f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(0)); // Black
-      Renderer::DrawImage(glm::vec2(-0.3f, 0.5f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(1)); // White
-      Renderer::DrawImage(glm::vec2(-0.1f, 0.5f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(0)); // Black
-      Renderer::DrawImage(glm::vec2(0.1f, 0.5f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(1)); // White
-      Renderer::DrawImage(glm::vec2(0.3f, 0.5f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(0)); // Black
-      Renderer::DrawImage(glm::vec2(0.5f, 0.5f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(1)); // White
-      Renderer::DrawImage(glm::vec2(0.7f, 0.5f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(0)); // Black
-      Renderer::DrawImage(glm::vec2(0.9f, 0.5f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(31)); // Number 7 (Border)
-
-      Renderer::DrawImage(glm::vec2(-0.793f, 0.7f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(32)); // Number 8 (Border)
-      Renderer::DrawImage(glm::vec2(-0.7f, 0.7f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(0)); // Black
-      Renderer::DrawImage(glm::vec2(-0.5f, 0.7f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(1)); // White
-      Renderer::DrawImage(glm::vec2(-0.3f, 0.7f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(0)); // Black
-      Renderer::DrawImage(glm::vec2(-0.1f, 0.7f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(1)); // White
-      Renderer::DrawImage(glm::vec2(0.1f, 0.7f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(0)); // Black
-      Renderer::DrawImage(glm::vec2(0.3f, 0.7f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(1)); // White
-      Renderer::DrawImage(glm::vec2(0.5f, 0.7f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(0)); // Black
-      Renderer::DrawImage(glm::vec2(0.7f, 0.7f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(1)); // White
-      Renderer::DrawImage(glm::vec2(0.9f, 0.7f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(32)); // Number 8 (Border)
-
-      Renderer::DrawImage(glm::vec2(-0.793f, 0.793f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(24)); // Corner
-      Renderer::DrawImage(glm::vec2(-0.7f, 0.793f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(16)); // Letter a (Border)
-      Renderer::DrawImage(glm::vec2(-0.5f, 0.793f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(17)); // Letter b (Border)
-      Renderer::DrawImage(glm::vec2(-0.3f, 0.793f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(18)); // Letter c (Border)
-      Renderer::DrawImage(glm::vec2(-0.1f, 0.793f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(19)); // Letter d (Border)
-      Renderer::DrawImage(glm::vec2(0.1f, 0.793f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(20)); // Letter e (Border)
-      Renderer::DrawImage(glm::vec2(0.3f, 0.793f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(21)); // Letter f (Border)
-      Renderer::DrawImage(glm::vec2(0.5f, 0.793f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(22)); // Letter g (Border)
-      Renderer::DrawImage(glm::vec2(0.7f, 0.793f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(23)); // Letter h (Border)
-      Renderer::DrawImage(glm::vec2(0.9f, 0.793f), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(24)); // Corner
-    }
-
-    void Game::DrawPieces()
-    {
-      for (int32_t y = 0; y < 8; y++)
-      {
-        for (int32_t x = 0; x < 8; x++)
-        {
-          std::optional<Piece> piece = m_Board[x][y];
-          if (piece.has_value())
-          {
-            if (piece->GetSide() == Side::White)
-            {
-              switch (piece->GetType())
-              {
-              case Chess::Piece::Type::Pawn:
-              {
-                Renderer::DrawImage(glm::vec2(-0.7f + (0.2f * x), -0.7f + (0.2f * y)), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(3));
-                break;
-              }
-              case Chess::Piece::Type::Rook:
-              {
-                Renderer::DrawImage(glm::vec2(-0.7f + (0.2f * x), -0.7f + (0.2f * y)), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(4));
-                break;
-              }
-              case Chess::Piece::Type::Knight:
-              {
-                Renderer::DrawImage(glm::vec2(-0.7f + (0.2f * x), -0.7f + (0.2f * y)), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(2));
-                break;
-              }
-              case Chess::Piece::Type::Bishop:
-              {
-                Renderer::DrawImage(glm::vec2(-0.7f + (0.2f * x), -0.7f + (0.2f * y)), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(5));
-                break;
-              }
-              case Chess::Piece::Type::King:
-              {
-                Renderer::DrawImage(glm::vec2(-0.7f + (0.2f * x), -0.7f + (0.2f * y)), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(6));
-                break;
-              }
-              case Chess::Piece::Type::Queen:
-              {
-                Renderer::DrawImage(glm::vec2(-0.7f + (0.2f * x), -0.7f + (0.2f * y)), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(7));
-                break;
-              }
-              }
-            }
-            else
-            {
-              switch (piece->GetType())
-              {
-              case Chess::Piece::Type::Pawn:
-              {
-                Renderer::DrawImage(glm::vec2(-0.7f + (0.2f * x), -0.7f + (0.2f * y)), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(9));
-                break;
-              }
-              case Chess::Piece::Type::Rook:
-              {
-                Renderer::DrawImage(glm::vec2(-0.7f + (0.2f * x), -0.7f + (0.2f * y)), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(10));
-                break;
-              }
-              case Chess::Piece::Type::Knight:
-              {
-                Renderer::DrawImage(glm::vec2(-0.7f + (0.2f * x), -0.7f + (0.2f * y)), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(8));
-                break;
-              }
-              case Chess::Piece::Type::Bishop:
-              {
-                Renderer::DrawImage(glm::vec2(-0.7f + (0.2f * x), -0.7f + (0.2f * y)), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(11));
-                break;
-              }
-              case Chess::Piece::Type::King:
-              {
-                Renderer::DrawImage(glm::vec2(-0.7f + (0.2f * x), -0.7f + (0.2f * y)), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(12));
-                break;
-              }
-              case Chess::Piece::Type::Queen:
-              {
-                Renderer::DrawImage(glm::vec2(-0.7f + (0.2f * x), -0.7f + (0.2f * y)), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(13));
-                break;
-              }
-              }
-            }
-          }
-        }
-      }
-    }
-
-    void Game::OnKeyPress(KeyCode key, bool repeat)
-    {
-      switch (m_CurrentStatus)
-      {
-      case Game::Status::Hovering:
-      {
-        if (repeat)
-          return;
-
-        glm::ivec2 newPos = m_CurrentCursorPos;
-
-        if (key == Key::Enter)
-        {
-          if (!Game::SelectCurrentTile())
-            return;
-
-          Renderer::ResetBatch();
-          Game::DrawBoard();
-          Game::DrawPieces();
-          Game::HoverCurrentTile();
-
-          if (Game::IsInCheck(m_Turn))
-          {
-            std::optional<glm::ivec2> kingPos = Game::FindKing(m_Turn);
-            Renderer::DrawImage(glm::vec2(-0.7 + (0.2f * kingPos->x), -0.7f + (0.2f * kingPos->y)), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(14));
-          }
-
-          Renderer::DrawImage(glm::vec2(-0.7 + (0.2f * m_SelectedTile.PossiblePaths[m_SelectedTileIndex].x), -0.7f + (0.2f * m_SelectedTile.PossiblePaths[m_SelectedTileIndex].y)), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(14));
-
-          Renderer::EndBatch();
-          return;
-        }
-
-        if (key == Key::Up)
-        {
-          newPos.y--;
-        }
-        else if (key == Key::Down)
-        {
-          newPos.y++;
-        }
-        else if (key == Key::Right)
-        {
-          newPos.x++;
-        }
-        else if (key == Key::Left)
-        {
-          newPos.x--;
-        }
-
-        newPos.x = std::clamp(newPos.x, 0, 7);
-        newPos.y = std::clamp(newPos.y, 0, 7);
-
-        m_CurrentCursorPos = newPos;
-        Renderer::ResetBatch();
-        Game::DrawBoard();
-        Game::DrawPieces();
-        Game::HoverCurrentTile();
-        if (Game::IsInCheck(m_Turn))
-        {
-          std::optional<glm::ivec2> kingPos = Game::FindKing(m_Turn);
-          Renderer::DrawImage(glm::vec2(-0.7 + (0.2f * kingPos->x), -0.7f + (0.2f * kingPos->y)), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(14));
-        }
-        Renderer::EndBatch();
-        break;
-      }
-      case Game::Status::Selecting:
-      {
-        if (key == Key::Escape)
-        {
-          m_CurrentStatus = Status::Hovering;
-          Renderer::ResetBatch();
-          Game::DrawBoard();
-          Game::DrawPieces();
-          Game::HoverCurrentTile();
-          Renderer::EndBatch();
-          m_SelectedTileIndex = 0;
-          return;
-        }
-
-        if (repeat || !m_SelectedTile.TilePiece.has_value())
-          return;
-
-        if (key == Key::Up || key == Key::Right)
-        {
-          m_SelectedTileIndex++;
-          if (m_SelectedTileIndex > m_SelectedTile.PossiblePaths.size() - 1)
-            m_SelectedTileIndex = 0;
-        }
-        else if (key == Key::Down || key == Key::Left)
-        {
-          m_SelectedTileIndex--;
-          if (m_SelectedTileIndex < 0)
-            m_SelectedTileIndex = m_SelectedTile.PossiblePaths.size() - 1;
-        }
-        else if (key == Key::Enter)
-        {
-          if (Game::IsInCheck(m_Turn))
-          {
-            auto backup = m_Board;
-            m_Board[m_SelectedTile.PossiblePaths[m_SelectedTileIndex].x][m_SelectedTile.PossiblePaths[m_SelectedTileIndex].y] = m_Board[m_CurrentCursorPos.x][m_CurrentCursorPos.y];
-            m_Board[m_CurrentCursorPos.x][m_CurrentCursorPos.y].reset();
-
-            if (Game::IsInCheck(m_Turn))
-            {
-              m_Board = backup;
-              break;
-            }
-          }
-          else
-          {
-            m_Board[m_SelectedTile.PossiblePaths[m_SelectedTileIndex].x][m_SelectedTile.PossiblePaths[m_SelectedTileIndex].y] = m_Board[m_CurrentCursorPos.x][m_CurrentCursorPos.y];
-            m_Board[m_CurrentCursorPos.x][m_CurrentCursorPos.y].reset();
-          }
-
-          m_SelectedTileIndex = 0;
-          m_CurrentStatus = Status::Hovering;
-          m_Turn = (m_Turn == Side::White) ? Side::Black : Side::White;
-          m_CurrentCursorPos = (m_Turn == Side::White) ? glm::ivec2(7, 7) : glm::ivec2(0, 0);
-
-          if (Game::IsCheckmate(m_Turn))
-          {
-            YK_INFO("Game over for side: {}", (m_Turn == Side::White) ? "White" : "Black");
-            break;
-          }
-
-          Renderer::ResetBatch();
-          Game::DrawBoard();
-          Game::DrawPieces();
-          Game::HoverCurrentTile();
-          if (Game::IsInCheck(m_Turn))
-          {
-            std::optional<glm::ivec2> kingPos = Game::FindKing(m_Turn);
-            Renderer::DrawImage(glm::vec2(-0.7 + (0.2f * kingPos->x), -0.7f + (0.2f * kingPos->y)), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(14));
-          }
-          Renderer::EndBatch();
           break;
         }
-
-        Renderer::ResetBatch();
-        Game::DrawBoard();
-        Game::DrawPieces();
-        Game::HoverCurrentTile();
-        if (Game::IsInCheck(m_Turn))
+        case Side::White:
         {
-          std::optional<glm::ivec2> kingPos = Game::FindKing(m_Turn);
-          Renderer::DrawImage(glm::vec2(-0.7 + (0.2f * kingPos->x), -0.7f + (0.2f * kingPos->y)), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(14));
+          if (row - 1 >= 0)
+            if (!(Game::GetFullBoard() & Game::GetPosition(row - 1, col)))
+              moves |= Game::GetPosition(row - 1, col);
+
+          if (attacks)
+          {
+            if (row - 1 >= 0 && col - 1 >= 0)
+              if (Game::GetBlackPieces() & Game::GetPosition(row - 1, col - 1))
+                moves |= Game::GetPosition(row - 1, col - 1);
+
+            if (row - 1 >= 0 && col + 1 < 8)
+              if (Game::GetBlackPieces() & Game::GetPosition(row - 1, col + 1))
+                moves |= Game::GetPosition(row - 1, col + 1);
+          }
+
+          if (tile & WHITE_PAWNS_DEFAULT_POSITIONS && row - 2 >= 0)
+            if (!(Game::GetFullBoard() & (Game::GetPosition(row - 1, col) | Game::GetPosition(row - 2, col))))
+              moves |= Game::GetPosition(row - 2, col);
+
+          break;
         }
-        Renderer::DrawImage(glm::vec2(-0.7 + (0.2f * m_SelectedTile.PossiblePaths[m_SelectedTileIndex].x), -0.7f + (0.2f * m_SelectedTile.PossiblePaths[m_SelectedTileIndex].y)), glm::vec2(0.2f, 0.2f), 1, m_ChessAtlas->GetSubTexture(14));
+        }
+        break;
+      }
+      case Piece::Queen:
+      case Piece::Rook:
+      {
+        BoardBitField movesField = 0ULL;
 
-        Renderer::EndBatch();
+        // HORIZONTAL CHECK
+        BoardRowBitField fullRow = Game::GetBoardRow(Game::GetFullBoard(), row);
+        BoardRowBitField enemyRow = Game::GetBoardRow((side == Side::Black) ? Game::GetWhitePieces() : Game::GetBlackPieces(), row);
+        BoardRowBitField rookRow = 0;
 
+        if ((rookRow = Game::GetBoardRow(tile, row) << 1) != 0)
+        {
+          while (!(rookRow & fullRow) && rookRow != 0)
+          {
+            movesField |= Game::GetRowBoard(rookRow, row);
+            rookRow <<= 1;
+          }
+
+          if (rookRow != 0 && attacks && rookRow & enemyRow)
+            movesField |= Game::GetRowBoard(rookRow, row);
+        }
+          
+        if ((rookRow = Game::GetBoardRow(tile, row) >> 1) != 0)
+        {
+          while (!(rookRow & fullRow) && rookRow != 0)
+          {
+            movesField |= Game::GetRowBoard(rookRow, row);
+            rookRow >>= 1;
+          }
+
+          if (rookRow != 0 && attacks && rookRow & enemyRow)
+            movesField |= Game::GetRowBoard(rookRow, row);
+        }
+
+        // VERTICAL CHECK
+        BoardColumnBitField fullColumn = Game::GetBoardColumn(Game::GetFullBoard(), col);
+        BoardColumnBitField enemyColumn = Game::GetBoardColumn((side == Side::Black) ? Game::GetWhitePieces() : Game::GetBlackPieces(), col);
+        BoardColumnBitField rookColumn;
+
+        if ((rookColumn = Game::GetBoardColumn(tile, col) << 1) != 0)
+        {
+          while (!(rookColumn & fullColumn) && rookColumn != 0)
+          {
+            movesField |= Game::GetColumnBoard(rookColumn, col);
+            rookColumn <<= 1;
+          }
+
+          if (rookColumn != 0 && attacks && rookColumn & enemyColumn)
+            movesField |= Game::GetColumnBoard(rookColumn, col);
+        }
+
+        if ((rookColumn = Game::GetBoardColumn(tile, col) >> 1) != 0)
+        {
+          while (!(rookColumn & fullColumn) && rookColumn != 0)
+          {
+            movesField |= Game::GetColumnBoard(rookColumn, col);
+            rookColumn >>= 1;
+          }
+
+          if (rookColumn != 0 && attacks && rookColumn & enemyColumn)
+            movesField |= Game::GetColumnBoard(rookColumn, col);
+        }
+
+        moves |= movesField;
+
+        if (piece != Piece::Queen)
+          break;
+      }
+      case Piece::Bishop:
+      {
+        BoardBitField movesField = 0ULL;
+
+        auto [diag1Full, diag2Full] = Game::GetBoardDiagonals(Game::GetFullBoard(), row, col);
+        auto [diag1Enemy, diag2Enemy] = Game::GetBoardDiagonals((side == Side::Black) ? Game::GetWhitePieces() : Game::GetBlackPieces(), row, col);
+        auto [diag1Bishop, diag2Bishop] = Game::GetBoardDiagonals(tile, row, col);
+
+        // FIRST DIAGONAL
+        BoardDiagonalBitField d1;
+
+        if ((d1 = diag1Bishop << 1) != 0)
+        {
+          while (!(d1 & diag1Full) && d1 != 0)
+          {
+            movesField |= Game::GetDiagonalsBoard(d1, 0, row, col);
+            d1 <<= 1;
+          }
+
+          if (d1 != 0 && attacks && (d1 & diag1Enemy))
+            movesField |= Game::GetDiagonalsBoard(d1, 0, row, col);
+        }
+          
+        if ((d1 = diag1Bishop >> 1) != 0)
+        {
+          while (!(d1 & diag1Full) && d1 != 0)
+          {
+            movesField |= Game::GetDiagonalsBoard(d1, 0, row, col);
+            d1 >>= 1;
+          }
+
+          if (d1 != 0 && attacks && (d1 & diag1Enemy))
+            movesField |= Game::GetDiagonalsBoard(d1, 0, row, col);
+        }
+
+        // SECOND DIAGONAL
+        BoardDiagonalBitField d2;
+
+        if ((d2 = diag2Bishop << 1) != 0)
+        {
+          while (!(d2 & diag2Full) && d2 != 0)
+          {
+            movesField |= Game::GetDiagonalsBoard(0, d2, row, col);
+            d2 <<= 1;
+          }
+
+          if (d2 != 0 && attacks && (d2 & diag2Enemy))
+            movesField |= Game::GetDiagonalsBoard(0, d2, row, col);
+        }
+          
+
+        if ((d2 = diag2Bishop >> 1) != 0)
+        {
+          while (!(d2 & diag2Full) && d2 != 0)
+          {
+            movesField |= Game::GetDiagonalsBoard(0, d2, row, col);
+            d2 >>= 1;
+          }
+
+          if (d2 != 0 && attacks && (d2 & diag2Enemy))
+            movesField |= Game::GetDiagonalsBoard(0, d2, row, col);
+        }
+
+        moves |= movesField;
+        break;
+      }
+      case Piece::Knight:
+      {
+        const std::array<std::tuple<int32_t, int32_t>, 8> displaces = { {{2, 1}, {2, -1}, {-2, 1}, {-2, -1}, {1, 2}, {1, -2}, {-1, 2}, {-1, -2}} };
+
+        for (const auto& [dr, dc] : displaces)
+        {
+          int32_t r = row + dr, c = col + dc;
+          if (r < 0 || r >= 8 || c < 0 || c >= 8) continue;
+
+          BoardBitField pos = GetPosition(r, c);
+          if (!(pos & GetFullBoard()) || (attacks && (pos & ((side == Side::Black) ? GetWhitePieces() : GetBlackPieces()))))
+            moves |= pos;
+        }
+        break;
+      }
+      case Piece::King:
+      {
+        const std::array<std::tuple<int32_t, int32_t>, 8> displaces = { {{1, 1}, {1, 0}, {1, -1}, {0, 1}, {0, -1}, {-1, 1}, {-1, 0}, {-1, -1}} };
+
+        for (int32_t i = 0; i < displaces.size(); i++)
+        {
+          const auto [rowDisp, colDisp] = displaces[i];
+          if (row + rowDisp >= 0 && row + rowDisp < 8 && col + colDisp >= 0 && col + colDisp < 8)
+          {
+            BoardBitField pos = Game::GetPosition(row + rowDisp, col + colDisp);
+            if (!(pos & Game::GetFullBoard()) || (attacks && pos & ((side == Side::Black) ? Game::GetWhitePieces() : Game::GetBlackPieces())))
+              moves |= pos;
+          }
+        }
         break;
       }
       }
+
+      return moves;
+    }
+
+    Game::BoardBitField Game::GetPieceMoves(int32_t row, int32_t col, bool attacks) const
+    {
+      return Game::GetPieceMoves(Game::GetPosition(row, col), attacks);
+    }
+
+    Game::BoardRowBitField Game::GetBoardRow(BoardBitField board, int32_t row) const
+    {
+      return static_cast<BoardRowBitField>((board >> ((7 - row) * 8)) & 0xFF);
+    }
+
+    Game::BoardColumnBitField Game::GetBoardColumn(BoardBitField board, int32_t col) const
+    {
+      BoardColumnBitField field = 0;
+
+      for (int32_t row = 0; row < 8; row++)
+      {
+        int32_t shift = ((7 - row) * 8) + (7 - col);
+        uint8_t bit = static_cast<uint8_t>((board >> shift) & 1ULL);
+        field |= (bit << (7 - row));
+      }
+
+      return field;
+    }
+
+    std::tuple<Game::BoardDiagonalBitField, Game::BoardDiagonalBitField> Game::GetBoardDiagonals(BoardBitField board, int32_t row, int32_t col) const
+    {
+      YK_ASSERT(row < 8 && row >= 0 && col < 8 && col >= 0, "Trying to access a value outside of limits: row={} col={}", row, col);
+
+      BoardDiagonalBitField d1 = 0;
+      BoardDiagonalBitField d2 = 0;
+
+      int32_t delta1 = col - row;
+      for (int32_t r = 0; r < 8; r++)
+      {
+        int32_t c = r + delta1;
+        if (c >= 0 && c < 8)
+        {
+          int32_t shift = ((7 - r) * 8) + (7 - c);
+          uint8_t bit = static_cast<uint8_t>((board >> shift) & 1ULL);
+          d1 |= (bit << (7 - r));
+        }
+      }
+
+      int32_t delta2 = row + col;
+      for (int32_t r = 0; r < 8; r++)
+      {
+        int32_t c = delta2 - r;
+        if (c >= 0 && c < 8)
+        {
+          int32_t shift = ((7 - r) * 8) + (7 - c);
+          uint8_t bit = static_cast<uint8_t>((board >> shift) & 1ULL);
+          d2 |= (bit << (7 - r));
+        }
+      }
+
+      return { d1, d2 };
+    }
+
+    Game::BoardBitField Game::GetRowBoard(BoardRowBitField row_field, int32_t row) const
+    {
+      return (static_cast<BoardBitField>(row_field) & 0xFFULL) << ((7 - row) * 8);
+    }
+
+    Game::BoardBitField Game::GetColumnBoard(BoardColumnBitField col_field, int32_t col) const
+    {
+      BoardBitField board = 0ULL;
+
+      for (int32_t row = 0; row < 8; row++)
+      {
+        uint8_t bit = static_cast<uint8_t>((col_field >> (7 - row)) & 1ULL);
+        int32_t shift = ((7 - row) * 8) + (7 - col);
+        board |= (static_cast<BoardBitField>(bit) << shift);
+      }
+
+      return board;
+    }
+
+    Game::BoardBitField Game::GetDiagonalsBoard(BoardDiagonalBitField first, BoardDiagonalBitField second, int32_t row, int32_t col) const
+    {
+      YK_ASSERT(row < 8 && row >= 0 && col < 8 && col >= 0, "Trying to access a value outside of limits: row={} col={}", row, col);
+
+      BoardBitField board = 0ULL;
+
+      if (first)
+      {
+        int32_t delta1 = col - row;
+        for (int32_t r = 0; r < 8; r++)
+        {
+          int32_t c = r + delta1;
+          if (c >= 0 && c < 8)
+          {
+            uint8_t bit = static_cast<uint8_t>((first >> (7 - r)) & 1ULL);
+            if (!bit) continue;
+            int32_t shift = ((7 - r) * 8) + (7 - c);
+            board |= (static_cast<BoardBitField>(bit) << shift);
+          }
+        }
+      }
+
+      if (second)
+      {
+        int32_t delta2 = row + col;
+        for (int32_t r = 0; r < 8; r++)
+        {
+          int32_t c = delta2 - r;
+          if (c >= 0 && c < 8)
+          {
+            uint8_t bit = static_cast<uint8_t>((second >> (7 - r)) & 1ULL);
+            if (!bit) continue;
+            int32_t shift = ((7 - r) * 8) + (7 - c);
+            board |= (static_cast<BoardBitField>(bit) << shift);
+          }
+        }
+      }
+
+      return board;
+    }
+
+    void Game::MovePiece(BoardStatus& board, BoardBitField src_tile, BoardBitField dst_tile)
+    {
+      YK_ASSERT((src_tile != 0 && (src_tile & (src_tile - 1)) == 0) && (dst_tile != 0 && (dst_tile & (dst_tile - 1)) == 0), "Tiles must have exactly one bit set");
+
+      m_BoardStatusHistory.push_back(m_BoardStatus);
+
+      BoardBitField* boardToChange = nullptr;
+
+      auto [piece, side] = Game::AccessTile(src_tile);
+      switch (piece)
+      {
+      case Game::Piece::Pawn:
+        boardToChange = (side == Side::Black) ? &board.BlackPawns : &board.WhitePawns;
+        break;
+      case Game::Piece::Rook:
+        boardToChange = (side == Side::Black) ? &board.BlackRooks : &board.WhiteRooks;
+        break;
+      case Game::Piece::Knight:
+        boardToChange = (side == Side::Black) ? &board.BlackKnights : &board.WhiteKnights;
+        break;
+      case Game::Piece::Bishop:
+        boardToChange = (side == Side::Black) ? &board.BlackBishops : &board.WhiteBishops;
+        break;
+      case Game::Piece::Queen:
+        boardToChange = (side == Side::Black) ? &board.BlackQueens : &board.WhiteQueens;
+        break;
+      case Game::Piece::King:
+        boardToChange = (side == Side::Black) ? &board.BlackKing : &board.WhiteKing;
+        break;
+      default:
+        YK_ASSERT(false, "Should not happend");
+        return;
+      }
+
+      *boardToChange &= ~src_tile;
+      *boardToChange |= dst_tile;
+
+      // Clearing the destination tile from all other boards of the opposite side
+      if (side == Side::Black)
+      {
+        board.WhitePawns &= ~dst_tile;
+        board.WhiteRooks &= ~dst_tile;
+        board.WhiteKnights &= ~dst_tile;
+        board.WhiteBishops &= ~dst_tile;
+        board.WhiteQueens &= ~dst_tile;
+      }
+      else
+      {
+        board.BlackPawns &= ~dst_tile;
+        board.BlackRooks &= ~dst_tile;
+        board.BlackKnights &= ~dst_tile;
+        board.BlackBishops &= ~dst_tile;
+        board.BlackQueens &= ~dst_tile;
+      }
+    }
+
+    void Game::UpdateGameStatus(Side side)
+    {
+      auto for_each_bit = [&](BoardBitField bb, auto&& fn)
+        {
+        while (bb) 
+        {
+          BoardBitField lsb = bb & (~bb + 1);
+          fn(lsb);
+          bb &= (bb - 1);
+        }
+        };
+
+      auto attacks_of = [&](Side attacker) -> BoardBitField 
+        {
+        BoardBitField attacks = 0ULL;
+
+        BoardBitField pawns = (attacker == Side::White) ? m_BoardStatus.WhitePawns : m_BoardStatus.BlackPawns;
+        BoardBitField rooks = (attacker == Side::White) ? m_BoardStatus.WhiteRooks : m_BoardStatus.BlackRooks;
+        BoardBitField knights = (attacker == Side::White) ? m_BoardStatus.WhiteKnights : m_BoardStatus.BlackKnights;
+        BoardBitField bishops = (attacker == Side::White) ? m_BoardStatus.WhiteBishops : m_BoardStatus.BlackBishops;
+        BoardBitField queens = (attacker == Side::White) ? m_BoardStatus.WhiteQueens : m_BoardStatus.BlackQueens;
+        BoardBitField king = (attacker == Side::White) ? m_BoardStatus.WhiteKing : m_BoardStatus.BlackKing;
+
+        for_each_bit(pawns, [&](BoardBitField p) 
+          {
+          auto [r, c] = GetPosition(p);
+          if (attacker == Side::White) 
+          {
+            if (r - 1 >= 0 && c - 1 >= 0) attacks |= GetPosition(r - 1, c - 1);
+            if (r - 1 >= 0 && c + 1 < 8) attacks |= GetPosition(r - 1, c + 1);
+          }
+          else 
+          {
+            if (r + 1 < 8 && c - 1 >= 0) attacks |= GetPosition(r + 1, c - 1);
+            if (r + 1 < 8 && c + 1 < 8) attacks |= GetPosition(r + 1, c + 1);
+          }
+          });
+
+        auto add_moves = [&](BoardBitField pieces)
+          {
+          for_each_bit(pieces, [&](BoardBitField t)
+            {
+            attacks |= GetPieceMoves(t, true);
+            });
+          };
+
+        add_moves(knights);
+        add_moves(bishops);
+        add_moves(rooks);
+        add_moves(queens);
+        add_moves(king);
+
+        return attacks;
+        };
+
+      BoardBitField whiteAttacks = attacks_of(Side::White);
+      BoardBitField blackAttacks = attacks_of(Side::Black);
+
+      m_GameStatus.WhiteCheck = (blackAttacks & m_BoardStatus.WhiteKing) != 0ULL;
+      m_GameStatus.BlackCheck = (whiteAttacks & m_BoardStatus.BlackKing) != 0ULL;
+
+      m_GameStatus.Mate = false;
+
+      bool sideInCheck = (side == Side::White) ? m_GameStatus.WhiteCheck : m_GameStatus.BlackCheck;
+      if (!sideInCheck) 
+        return;
+
+      BoardBitField sidePieces = (side == Side::White) ? Game::GetWhitePieces() : Game::GetBlackPieces();
+
+      bool hasEscape = false;
+
+      for_each_bit(sidePieces, [&](BoardBitField src) 
+        {
+        if (hasEscape) 
+          return;
+
+        BoardBitField moves = GetPieceMoves(src, true);
+
+        for_each_bit(moves, [&](BoardBitField dst) 
+          {
+          if (hasEscape) 
+            return;
+
+          BoardStatus backup = m_BoardStatus;
+          Game::MovePiece(m_BoardStatus, src, dst);
+
+          BoardBitField oppAttacks = attacks_of((side == Side::White) ? Side::Black : Side::White);
+          bool stillInCheck = (oppAttacks & ((side == Side::White) ? m_BoardStatus.WhiteKing : m_BoardStatus.BlackKing)) != 0ULL;
+
+          if (!stillInCheck) 
+            hasEscape = true;
+
+          m_BoardStatus = backup;
+          });
+        });
+
+      m_GameStatus.Mate = !hasEscape;
+    }
+
+    void Game::Draw(Piece piece, Side side, int32_t row, int32_t col) const
+    {
+      const glm::vec3 pos(-0.7f + (0.2f * col), -0.7f + (0.2f * row), 0.0f);
+      const glm::vec3 scale(0.2f, 0.2f, 1.0f);
+      const int32_t id = row * 8 + col + 1;
+      SubTexture subTexture;
+
+      switch (piece)
+      {
+      case Game::Piece::Pawn:
+        subTexture = m_ChessAtlas->GetSubTexture((side == Side::Black) ? 9 : 3);
+        break;
+      case Game::Piece::Rook:
+        subTexture = m_ChessAtlas->GetSubTexture((side == Side::Black) ? 10 : 4);
+        break;
+      case Game::Piece::Knight:
+        subTexture = m_ChessAtlas->GetSubTexture((side == Side::Black) ? 8 : 2);
+        break;
+      case Game::Piece::Bishop:
+        subTexture = m_ChessAtlas->GetSubTexture((side == Side::Black) ? 11 : 5);
+        break;
+      case Game::Piece::Queen:
+        subTexture = m_ChessAtlas->GetSubTexture((side == Side::Black) ? 13 : 7);
+        break;
+      case Game::Piece::King:
+        subTexture = m_ChessAtlas->GetSubTexture((side == Side::Black) ? 12 : 6);
+        break;
+      default:
+        subTexture = m_ChessAtlas->GetSubTexture(37);
+        break;
+      }
+
+      Renderer::DrawImage(pos, scale, id, subTexture);
+    }
+
+    void Game::Draw(DrawElement element, float x, float y, int32_t id) const
+    {
+      const glm::vec3 pos(x, y, -0.5f);
+      const glm::vec3 scale(0.2f, 0.2f, 1.0f);
+      SubTexture subTexture;
+
+      switch (element)
+      {
+      case Game::DrawElement::BlackTile:
+        subTexture = m_ChessAtlas->GetSubTexture(0);
+        break;
+      case Game::DrawElement::WhiteTile:
+        subTexture = m_ChessAtlas->GetSubTexture(1);
+        break;
+      case Game::DrawElement::Num1:
+        subTexture = m_ChessAtlas->GetSubTexture(25);
+        break;
+      case Game::DrawElement::Num2:
+        subTexture = m_ChessAtlas->GetSubTexture(26);
+        break;
+      case Game::DrawElement::Num3:
+        subTexture = m_ChessAtlas->GetSubTexture(27);
+        break;
+      case Game::DrawElement::Num4:
+        subTexture = m_ChessAtlas->GetSubTexture(28);
+        break;
+      case Game::DrawElement::Num5:
+        subTexture = m_ChessAtlas->GetSubTexture(29);
+        break;
+      case Game::DrawElement::Num6:
+        subTexture = m_ChessAtlas->GetSubTexture(30);
+        break;
+      case Game::DrawElement::Num7:
+        subTexture = m_ChessAtlas->GetSubTexture(31);
+        break;
+      case Game::DrawElement::Num8:
+        subTexture = m_ChessAtlas->GetSubTexture(32);
+        break;
+      case Game::DrawElement::CharA:
+        subTexture = m_ChessAtlas->GetSubTexture(16);
+        break;
+      case Game::DrawElement::CharB:
+        subTexture = m_ChessAtlas->GetSubTexture(17);
+        break;
+      case Game::DrawElement::CharC:
+        subTexture = m_ChessAtlas->GetSubTexture(18);
+        break;
+      case Game::DrawElement::CharD:
+        subTexture = m_ChessAtlas->GetSubTexture(19);
+        break;
+      case Game::DrawElement::CharE:
+        subTexture = m_ChessAtlas->GetSubTexture(20);
+        break;
+      case Game::DrawElement::CharF:
+        subTexture = m_ChessAtlas->GetSubTexture(21);
+        break;
+      case Game::DrawElement::CharG:
+        subTexture = m_ChessAtlas->GetSubTexture(22);
+        break;
+      case Game::DrawElement::CharH:
+        subTexture = m_ChessAtlas->GetSubTexture(23);
+        break;
+      case Game::DrawElement::Corner:
+        subTexture = m_ChessAtlas->GetSubTexture(24);
+        break;
+      case Game::DrawElement::HoverTile:
+        subTexture = m_ChessAtlas->GetSubTexture(15);
+        break;
+      case Game::DrawElement::ActionTile:
+        subTexture = m_ChessAtlas->GetSubTexture(14);
+        break;
+      default:
+      {
+        YK_WARN("Drawing invisible tile");
+        subTexture = m_ChessAtlas->GetSubTexture(37);
+        break;
+      }
+      }
+
+      Renderer::DrawImage(pos, scale, id, subTexture);
+    }
+
+    void Game::DrawGame() const
+    {
+      Game::Draw(DrawElement::Corner, -0.793f, -0.9f);
+      Game::Draw(DrawElement::CharA, -0.7f, -0.9f);
+      Game::Draw(DrawElement::CharB, -0.5f, -0.9f);
+      Game::Draw(DrawElement::CharC, -0.3f, -0.9f);
+      Game::Draw(DrawElement::CharD, -0.1f, -0.9f);
+      Game::Draw(DrawElement::CharE, 0.1f, -0.9f);
+      Game::Draw(DrawElement::CharF, 0.3f, -0.9f);
+      Game::Draw(DrawElement::CharG, 0.5f, -0.9f);
+      Game::Draw(DrawElement::CharH, 0.7f, -0.9f);
+      Game::Draw(DrawElement::Corner, 0.9f, -0.9f);
+
+      Game::Draw(DrawElement::Corner, -0.793f, 0.793);
+      Game::Draw(DrawElement::CharA, -0.7f, 0.793);
+      Game::Draw(DrawElement::CharB, -0.5f, 0.793);
+      Game::Draw(DrawElement::CharC, -0.3f, 0.793);
+      Game::Draw(DrawElement::CharD, -0.1f, 0.793);
+      Game::Draw(DrawElement::CharE, 0.1f, 0.793);
+      Game::Draw(DrawElement::CharF, 0.3f, 0.793);
+      Game::Draw(DrawElement::CharG, 0.5f, 0.793);
+      Game::Draw(DrawElement::CharH, 0.7f, 0.793);
+      Game::Draw(DrawElement::Corner, 0.9f, 0.793);
+
+      for (int32_t row = 0; row < 8; row++)
+      {
+        Game::Draw(static_cast<DrawElement>(row + 2), -0.793f, -0.7f + (0.2f * row));
+        for (int32_t col = 0; col < 8; col++)
+        {
+          Game::Draw(((row + col) % 2) ? DrawElement::BlackTile : DrawElement::WhiteTile, -0.7f + (0.2f * col), -0.7f + (0.2f * row));
+          const auto [piece, side] = Game::AccessTile(row, col);
+          Game::Draw(piece, side, row, col);
+        }
+        Game::Draw(static_cast<DrawElement>(row + 2), 0.9f, -0.7f + (0.2f * row));
+      }
+    }
+
+    void Game::OnMouseMove(double xpos, double ypos)
+    {
+      uint32_t id = Renderer::GetPositionID(EventManager::MouseNormalizedToPixel(xpos, ypos));
+
+      if (id == 0)
+      {
+        if (m_HoveringTile != 0ULL)
+        {
+          Renderer::ResetBatch();
+          Game::DrawGame();
+
+          if (m_SelectedTile)
+          {
+            auto [row, col] = Game::GetPosition(m_SelectedTile);
+            Game::Draw(DrawElement::HoverTile, -0.7f + (0.2f * col), -0.7f + (0.2f * row), row * 8 + col + 1);
+
+            if (m_SelectedTileMoves)
+              for (int32_t row = 0; row < 8; row++)
+                for (int32_t col = 0; col < 8; col++)
+                  if (Game::GetPosition(row, col) & m_SelectedTileMoves)
+                    Game::Draw(DrawElement::HoverTile, -0.7f + (0.2f * col), -0.7f + (0.2f * row), row * 8 + col + 1);
+          }
+          if (m_NextMoveTile)
+          {
+            auto [row, col] = Game::GetPosition(m_NextMoveTile);
+            Game::Draw(DrawElement::ActionTile, -0.7f + (0.2f * col), -0.7f + (0.2f * row), row * 8 + col + 1);
+          }
+          if (m_GameStatus.BlackCheck)
+          {
+            auto [rowk, colk] = Game::GetPosition(m_BoardStatus.BlackKing);
+            Game::Draw(DrawElement::ActionTile, -0.7f + (0.2f * colk), -0.7f + (0.2f * rowk), rowk * 8 + colk + 1);
+          }
+          if (m_GameStatus.WhiteCheck)
+          {
+            auto [rowk, colk] = Game::GetPosition(m_BoardStatus.WhiteKing);
+            Game::Draw(DrawElement::ActionTile, -0.7f + (0.2f * colk), -0.7f + (0.2f * rowk), rowk * 8 + colk + 1);
+          }
+
+          Renderer::EndBatch();
+          m_HoveringTile = 0ULL;
+        }
+        return;
+      }
+
+      glm::uvec2 mouseTilePos = glm::uvec2(7 - ((id - 1) / 8), (id - 1) % 8);
+
+      if (m_HoveringTile)
+      {
+        auto [row, col] = Game::GetPosition(m_HoveringTile);
+
+        if (mouseTilePos.x == row && mouseTilePos.y == col)
+          return;
+      }
+
+      m_HoveringTile = Game::GetPosition(mouseTilePos.x, mouseTilePos.y);
+
+      Renderer::ResetBatch();
+      Game::DrawGame();
+      if (m_HoveringTile)
+      {
+        auto [row, col] = Game::GetPosition(m_HoveringTile);
+        Game::Draw(DrawElement::HoverTile, -0.7f + (0.2f * col), -0.7f + (0.2f * row), row * 8 + col + 1);
+      }
+      if (m_SelectedTile)
+      {
+        auto [row, col] = Game::GetPosition(m_SelectedTile);
+        Game::Draw(DrawElement::HoverTile, -0.7f + (0.2f * col), -0.7f + (0.2f * row), row * 8 + col + 1);
+
+        if (m_SelectedTileMoves)
+          for (int32_t row = 0; row < 8; row++)
+            for (int32_t col = 0; col < 8; col++)
+              if (Game::GetPosition(row, col) & m_SelectedTileMoves)
+                Game::Draw(DrawElement::HoverTile, -0.7f + (0.2f * col), -0.7f + (0.2f * row), row * 8 + col + 1);
+      }
+      if (m_NextMoveTile)
+      {
+        auto [row, col] = Game::GetPosition(m_NextMoveTile);
+        Game::Draw(DrawElement::ActionTile, -0.7f + (0.2f * col), -0.7f + (0.2f * row), row * 8 + col + 1);
+      }
+      if (m_GameStatus.BlackCheck)
+      {
+        auto [rowk, colk] = Game::GetPosition(m_BoardStatus.BlackKing);
+        Game::Draw(DrawElement::ActionTile, -0.7f + (0.2f * colk), -0.7f + (0.2f * rowk), rowk * 8 + colk + 1);
+      }
+      if (m_GameStatus.WhiteCheck)
+      {
+        auto [rowk, colk] = Game::GetPosition(m_BoardStatus.WhiteKing);
+        Game::Draw(DrawElement::ActionTile, -0.7f + (0.2f * colk), -0.7f + (0.2f * rowk), rowk * 8 + colk + 1);
+      }
+      Renderer::EndBatch();
     }
 
     void Game::OnMouseButtonPress(MouseCode button)
@@ -1056,28 +877,161 @@ namespace yk
       {
       case Mouse::ButtonLeft:
       {
-        Renderer::UpdateIDFramebuffer();
+        if (m_HoveringTile)
+        {
+          if (m_SelectedTile)
+          {
+            if (m_HoveringTile & m_SelectedTileMoves)
+            {
+              m_NextMoveTile = m_HoveringTile;
 
-        glm::vec2 mousePos = Input::GetMousePosition();
-        glm::uvec2 winSize = WindowManager::GetWindowSize();
-        glm::uvec2 fbSize = WindowManager::GetFramebufferSize();
+              Game::MovePiece(m_BoardStatus, m_SelectedTile, m_NextMoveTile);
+              Game::UpdateGameStatus((m_Turn == Side::Black) ? Side::White : Side::Black);
+              if ((m_Turn == Side::Black) ? m_GameStatus.BlackCheck : m_GameStatus.WhiteCheck)
+              {
+                m_BoardStatus = m_BoardStatusHistory[m_BoardStatusHistory.size() - 2];
+                m_BoardStatusHistory.pop_back();
+                m_NextMoveTile = 0ULL;
+                break;
+              }
 
-        float scaleX = static_cast<float>(fbSize.x) / static_cast<float>(winSize.x);
-        float scaleY = static_cast<float>(fbSize.y) / static_cast<float>(winSize.y);
+              auto [row, col] = Game::GetPosition(m_NextMoveTile);
+              Renderer::ResetBatch();
+              Game::DrawGame();
+              Game::Draw(DrawElement::ActionTile, -0.7f + (0.2f * col), -0.7f + (0.2f * row), row * 8 + col + 1);
 
-        int32_t pixelX = std::clamp(static_cast<int>(mousePos.x * scaleX), 0, static_cast<int32_t>(fbSize.x) - 1);
-        int32_t pixelY = std::clamp(static_cast<int>(mousePos.y * scaleY), 0, static_cast<int32_t>(fbSize.y) - 1);
+              if (m_GameStatus.Mate)
+              {
+                if (m_GameStatus.BlackCheck)
+                  YK_INFO("White side has won");
+                if (m_GameStatus.WhiteCheck)
+                  YK_INFO("Black side has won");
+              }
+              else
+              {
+                if (m_GameStatus.BlackCheck)
+                {
+                  auto [rowk, colk] = Game::GetPosition(m_BoardStatus.BlackKing);
+                  Game::Draw(DrawElement::ActionTile, -0.7f + (0.2f * colk), -0.7f + (0.2f * rowk), rowk * 8 + colk + 1);
+                }
+                if (m_GameStatus.WhiteCheck)
+                {
+                  auto [rowk, colk] = Game::GetPosition(m_BoardStatus.WhiteKing);
+                  Game::Draw(DrawElement::ActionTile, -0.7f + (0.2f * colk), -0.7f + (0.2f * rowk), rowk * 8 + colk + 1);
+                }
+              }
 
-        pixelY = fbSize.y - 1 - pixelY;
+              Renderer::EndBatch();
 
-        uint32_t id = Renderer::GetPositionID(glm::uvec2(pixelX, pixelY));
+              m_Turn = (m_Turn == Side::Black) ? Side::White : Side::Black;
+              m_SelectedTile = 0ULL;
+            }
+            else
+            {
+              if (m_Turn == std::get<1>(Game::AccessTile(m_HoveringTile)))
+              {
+                m_NextMoveTile = 0ULL;
+                m_SelectedTile = m_HoveringTile;
+                auto [row, col] = Game::GetPosition(m_SelectedTile);
 
-        YK_INFO("ID {}", id);
+                Renderer::ResetBatch();
+                Game::DrawGame();
+                Game::Draw(DrawElement::HoverTile, -0.7f + (0.2f * col), -0.7f + (0.2f * row), row * 8 + col + 1);
+
+                if (m_SelectedTileMoves = Game::GetPieceMoves(m_SelectedTile, true))
+                  for (int32_t row = 0; row < 8; row++)
+                    for (int32_t col = 0; col < 8; col++)
+                      if (Game::GetPosition(row, col) & m_SelectedTileMoves)
+                        Game::Draw(DrawElement::HoverTile, -0.7f + (0.2f * col), -0.7f + (0.2f * row), row * 8 + col + 1);
+
+                if (m_GameStatus.BlackCheck)
+                {
+                  auto [rowk, colk] = Game::GetPosition(m_BoardStatus.BlackKing);
+                  Game::Draw(DrawElement::ActionTile, -0.7f + (0.2f * colk), -0.7f + (0.2f * rowk), rowk * 8 + colk + 1);
+                }
+                if (m_GameStatus.WhiteCheck)
+                {
+                  auto [rowk, colk] = Game::GetPosition(m_BoardStatus.WhiteKing);
+                  Game::Draw(DrawElement::ActionTile, -0.7f + (0.2f * colk), -0.7f + (0.2f * rowk), rowk * 8 + colk + 1);
+                }
+
+                Renderer::EndBatch();
+              }
+            }
+          }
+          else
+          {
+            if (m_Turn == std::get<1>(Game::AccessTile(m_HoveringTile)) && Game::GetPieceMoves(m_HoveringTile, true))
+            {
+              m_NextMoveTile = 0ULL;
+              m_SelectedTile = m_HoveringTile;
+              auto [row, col] = Game::GetPosition(m_SelectedTile);
+
+              Renderer::ResetBatch();
+              Game::DrawGame();
+              Game::Draw(DrawElement::HoverTile, -0.7f + (0.2f * col), -0.7f + (0.2f * row), row * 8 + col + 1);
+
+              if (m_SelectedTileMoves = Game::GetPieceMoves(m_SelectedTile, true))
+                for (int32_t row = 0; row < 8; row++)
+                  for (int32_t col = 0; col < 8; col++)
+                    if (Game::GetPosition(row, col) & m_SelectedTileMoves)
+                      Game::Draw(DrawElement::HoverTile, -0.7f + (0.2f * col), -0.7f + (0.2f * row), row * 8 + col + 1);
+
+              if (m_GameStatus.BlackCheck)
+              {
+                auto [rowk, colk] = Game::GetPosition(m_BoardStatus.BlackKing);
+                Game::Draw(DrawElement::ActionTile, -0.7f + (0.2f * colk), -0.7f + (0.2f * rowk), rowk * 8 + colk + 1);
+              }
+              if (m_GameStatus.WhiteCheck)
+              {
+                auto [rowk, colk] = Game::GetPosition(m_BoardStatus.WhiteKing);
+                Game::Draw(DrawElement::ActionTile, -0.7f + (0.2f * colk), -0.7f + (0.2f * rowk), rowk * 8 + colk + 1);
+              }
+
+              Renderer::EndBatch();
+            }
+          }
+        }
+        break;
+      }
+      case Mouse::ButtonRight:
+      {
+        m_SelectedTile = 0ULL;
+        m_NextMoveTile = 0ULL;
+
+        Renderer::ResetBatch();
+        Game::DrawGame();
+        if (m_SelectedTile)
+        {
+          auto [row, col] = Game::GetPosition(m_SelectedTile);
+          Game::Draw(DrawElement::HoverTile, -0.7f + (0.2f * col), -0.7f + (0.2f * row), row * 8 + col + 1);
+
+          if (m_SelectedTileMoves)
+            for (int32_t row = 0; row < 8; row++)
+              for (int32_t col = 0; col < 8; col++)
+                if (Game::GetPosition(row, col) & m_SelectedTileMoves)
+                  Game::Draw(DrawElement::HoverTile, -0.7f + (0.2f * col), -0.7f + (0.2f * row), row * 8 + col + 1);
+        }
+        if (m_NextMoveTile)
+        {
+          auto [row, col] = Game::GetPosition(m_NextMoveTile);
+          Game::Draw(DrawElement::ActionTile, -0.7f + (0.2f * col), -0.7f + (0.2f * row), row * 8 + col + 1);
+        }
+        if (m_GameStatus.BlackCheck)
+        {
+          auto [rowk, colk] = Game::GetPosition(m_BoardStatus.BlackKing);
+          Game::Draw(DrawElement::ActionTile, -0.7f + (0.2f * colk), -0.7f + (0.2f * rowk), rowk * 8 + colk + 1);
+        }
+        if (m_GameStatus.WhiteCheck)
+        {
+          auto [rowk, colk] = Game::GetPosition(m_BoardStatus.WhiteKing);
+          Game::Draw(DrawElement::ActionTile, -0.7f + (0.2f * colk), -0.7f + (0.2f * rowk), rowk * 8 + colk + 1);
+        }
+        Renderer::EndBatch();
 
         break;
       }
       }
     }
-
   }
 }
