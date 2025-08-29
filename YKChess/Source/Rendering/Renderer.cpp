@@ -332,6 +332,7 @@ namespace yk
 
     Renderer::Get().s_VertexBuffer = VertexBuffer::Create(Renderer::Get().s_VertexBatchVector);
     Renderer::Get().s_IndexBuffer = IndexBuffer::Create(Renderer::Get().s_IndexBatchVector);
+    Renderer::Get().s_UpdateMousePicking = true;
   }
 
   void Renderer::ResetBatch()
@@ -454,33 +455,37 @@ namespace yk
 
     vkCmdEndRenderPass(Renderer::Get().s_CommandBuffers[Renderer::Get().s_CurrentFrame]->Get());
 
-    std::array<VkClearValue, 2> mousePickingClearValues{};
-    mousePickingClearValues[0].color.uint32[0] = 0;
-    mousePickingClearValues[1].depthStencil = { 1.0f, 0 };
+    if (Renderer::Get().s_UpdateMousePicking)
+    {
+      std::array<VkClearValue, 2> mousePickingClearValues{};
+      mousePickingClearValues[0].color.uint32[0] = 0;
+      mousePickingClearValues[1].depthStencil = { 1.0f, 0 };
 
-    VkRenderPassBeginInfo mousePickingRenderPassBeginInfo{};
-    mousePickingRenderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    mousePickingRenderPassBeginInfo.renderPass = Renderer::Get().s_MousePickingRenderPass->Get();
-    mousePickingRenderPassBeginInfo.framebuffer = Renderer::Get().s_MousePickingFramebuffer->Get();
-    mousePickingRenderPassBeginInfo.renderArea.offset = { 0, 0 };
-    mousePickingRenderPassBeginInfo.renderArea.extent = Renderer::Get().s_Swapchain->GetExtent();
-    mousePickingRenderPassBeginInfo.clearValueCount = static_cast<uint32_t>(mousePickingClearValues.size());
-    mousePickingRenderPassBeginInfo.pClearValues = mousePickingClearValues.data();
+      VkRenderPassBeginInfo mousePickingRenderPassBeginInfo{};
+      mousePickingRenderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+      mousePickingRenderPassBeginInfo.renderPass = Renderer::Get().s_MousePickingRenderPass->Get();
+      mousePickingRenderPassBeginInfo.framebuffer = Renderer::Get().s_MousePickingFramebuffer->Get();
+      mousePickingRenderPassBeginInfo.renderArea.offset = { 0, 0 };
+      mousePickingRenderPassBeginInfo.renderArea.extent = Renderer::Get().s_Swapchain->GetExtent();
+      mousePickingRenderPassBeginInfo.clearValueCount = static_cast<uint32_t>(mousePickingClearValues.size());
+      mousePickingRenderPassBeginInfo.pClearValues = mousePickingClearValues.data();
 
-    vkCmdBeginRenderPass(Renderer::Get().s_CommandBuffers[Renderer::Get().s_CurrentFrame]->Get(), &mousePickingRenderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+      vkCmdBeginRenderPass(Renderer::Get().s_CommandBuffers[Renderer::Get().s_CurrentFrame]->Get(), &mousePickingRenderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-    vkCmdSetViewport(Renderer::Get().s_CommandBuffers[Renderer::Get().s_CurrentFrame]->Get(), 0, 1, &viewport);
-    vkCmdSetScissor(Renderer::Get().s_CommandBuffers[Renderer::Get().s_CurrentFrame]->Get(), 0, 1, &scissor);
+      vkCmdSetViewport(Renderer::Get().s_CommandBuffers[Renderer::Get().s_CurrentFrame]->Get(), 0, 1, &viewport);
+      vkCmdSetScissor(Renderer::Get().s_CommandBuffers[Renderer::Get().s_CurrentFrame]->Get(), 0, 1, &scissor);
 
-    vkCmdBindVertexBuffers(Renderer::Get().s_CommandBuffers[Renderer::Get().s_CurrentFrame]->Get(), 0, 1, vertexBuffers, offsets);
-    vkCmdBindIndexBuffer(Renderer::Get().s_CommandBuffers[Renderer::Get().s_CurrentFrame]->Get(), Renderer::Get().s_IndexBuffer->Get(), 0, VK_INDEX_TYPE_UINT32);
+      vkCmdBindVertexBuffers(Renderer::Get().s_CommandBuffers[Renderer::Get().s_CurrentFrame]->Get(), 0, 1, vertexBuffers, offsets);
+      vkCmdBindIndexBuffer(Renderer::Get().s_CommandBuffers[Renderer::Get().s_CurrentFrame]->Get(), Renderer::Get().s_IndexBuffer->Get(), 0, VK_INDEX_TYPE_UINT32);
 
-    vkCmdBindDescriptorSets(Renderer::Get().s_CommandBuffers[Renderer::Get().s_CurrentFrame]->Get(), VK_PIPELINE_BIND_POINT_GRAPHICS, Renderer::Get().s_PipelineLayout->Get(), 0, 1, &Renderer::Get().s_PipelineDescriptorSets[Renderer::Get().s_CurrentFrame]->Get(), 0, VK_NULL_HANDLE);
-    vkCmdBindPipeline(Renderer::Get().s_CommandBuffers[Renderer::Get().s_CurrentFrame]->Get(), VK_PIPELINE_BIND_POINT_GRAPHICS, Renderer::Get().s_MousePickingPipeline->Get());
+      vkCmdBindDescriptorSets(Renderer::Get().s_CommandBuffers[Renderer::Get().s_CurrentFrame]->Get(), VK_PIPELINE_BIND_POINT_GRAPHICS, Renderer::Get().s_PipelineLayout->Get(), 0, 1, &Renderer::Get().s_PipelineDescriptorSets[Renderer::Get().s_CurrentFrame]->Get(), 0, VK_NULL_HANDLE);
+      vkCmdBindPipeline(Renderer::Get().s_CommandBuffers[Renderer::Get().s_CurrentFrame]->Get(), VK_PIPELINE_BIND_POINT_GRAPHICS, Renderer::Get().s_MousePickingPipeline->Get());
 
-    vkCmdDrawIndexed(Renderer::Get().s_CommandBuffers[Renderer::Get().s_CurrentFrame]->Get(), static_cast<uint32_t>(Renderer::Get().s_IndexBuffer->GetIndexCount()), 1, 0, 0, 0);
+      vkCmdDrawIndexed(Renderer::Get().s_CommandBuffers[Renderer::Get().s_CurrentFrame]->Get(), static_cast<uint32_t>(Renderer::Get().s_IndexBuffer->GetIndexCount()), 1, 0, 0, 0);
 
-    vkCmdEndRenderPass(Renderer::Get().s_CommandBuffers[Renderer::Get().s_CurrentFrame]->Get());
+      vkCmdEndRenderPass(Renderer::Get().s_CommandBuffers[Renderer::Get().s_CurrentFrame]->Get());
+      Renderer::Get().s_UpdateMousePicking = false;
+    }
 
     result = vkEndCommandBuffer(Renderer::Get().s_CommandBuffers[Renderer::Get().s_CurrentFrame]->Get());
     YK_ASSERT(result == VK_SUCCESS, "[VULKAN] Failed to end recording command buffer. Error: {}", Utils::VkResultToString(result));

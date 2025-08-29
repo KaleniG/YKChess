@@ -74,6 +74,7 @@ namespace yk
 
   private:
     bool s_Initialized = false;
+    bool s_UpdateMousePicking = false;
 
     std::shared_ptr<Device> s_Device;
     std::shared_ptr<Swapchain> s_Swapchain;
