@@ -53,6 +53,7 @@ namespace yk
     static void ResetBatch();
     static void DrawText(const std::string& text, glm::vec2 size, glm::vec2 position, glm::vec4 color, std::shared_ptr<FontResource> font);
     static uint32_t GetPositionID(glm::uvec2 position);
+    static void UpdateMPFramebuffer();
 
     static void Render();
 

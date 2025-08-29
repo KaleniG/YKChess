@@ -37,6 +37,7 @@ namespace yk
       Renderer::SetImageSlot(1, game->m_ChessAtlas);
       game->DrawGame();
       Renderer::EndBatch();
+      Renderer::UpdateMPFramebuffer();
       return game;
     }
 

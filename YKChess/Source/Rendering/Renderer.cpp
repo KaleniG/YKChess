@@ -332,7 +332,6 @@ namespace yk
 
     Renderer::Get().s_VertexBuffer = VertexBuffer::Create(Renderer::Get().s_VertexBatchVector);
     Renderer::Get().s_IndexBuffer = IndexBuffer::Create(Renderer::Get().s_IndexBatchVector);
-    Renderer::Get().s_UpdateMousePicking = true;
   }
 
   void Renderer::ResetBatch()
@@ -377,6 +376,12 @@ namespace yk
     Renderer::Get().s_MousePickingColorAttachement->Transition(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
     return id;
+  }
+
+  void Renderer::UpdateMPFramebuffer()
+  {
+    YK_ASSERT(Renderer::IsInitialized(), "The renderer hasn't been initialized yet");
+    Renderer::Get().s_UpdateMousePicking = true;
   }
 
   void Renderer::Render()
