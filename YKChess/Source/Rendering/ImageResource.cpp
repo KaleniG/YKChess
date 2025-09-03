@@ -35,10 +35,14 @@ namespace yk
     {
       for (int x = 0; x < horizontalCuts; ++x)
       {
-        float u0 = static_cast<float>(x * x_cut_size) / imageResource->m_Texture->GetWidth();
-        float v0 = static_cast<float>(y * y_cut_size) / imageResource->m_Texture->GetHeight();
-        float u1 = static_cast<float>((x + 1) * x_cut_size) / imageResource->m_Texture->GetWidth();
-        float v1 = static_cast<float>((y + 1) * y_cut_size) / imageResource->m_Texture->GetHeight();
+        float texWidth = static_cast<float>(imageResource->m_Texture->GetWidth());
+        float texHeight = static_cast<float>(imageResource->m_Texture->GetHeight());
+
+        const float litlOffset = 0.1f; // When zoomed in the subtexture cut-outs show fragments of other subtextures so we go 0.1f inside the texture (lowering the value will result in unjustly cut textures)
+        float u0 = (x * x_cut_size + litlOffset) / texWidth;
+        float v0 = (y * y_cut_size + litlOffset) / texHeight;
+        float u1 = ((x + 1) * x_cut_size - litlOffset) / texWidth;
+        float v1 = ((y + 1) * y_cut_size - litlOffset) / texHeight;
 
         std::array<glm::vec2, 4> uv = 
         {

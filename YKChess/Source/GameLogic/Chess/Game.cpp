@@ -745,7 +745,7 @@ namespace yk
 
     void Game::DrawGame() const
     {
-      Game::Draw(DrawElement::Corner, -0.793f, -0.9f);
+      Game::Draw(DrawElement::Corner, -0.791f, -0.9f);
       Game::Draw(DrawElement::CharA, -0.7f, -0.9f);
       Game::Draw(DrawElement::CharB, -0.5f, -0.9f);
       Game::Draw(DrawElement::CharC, -0.3f, -0.9f);
@@ -756,20 +756,20 @@ namespace yk
       Game::Draw(DrawElement::CharH, 0.7f, -0.9f);
       Game::Draw(DrawElement::Corner, 0.9f, -0.9f);
 
-      Game::Draw(DrawElement::Corner, -0.793f, 0.793);
-      Game::Draw(DrawElement::CharA, -0.7f, 0.793);
-      Game::Draw(DrawElement::CharB, -0.5f, 0.793);
-      Game::Draw(DrawElement::CharC, -0.3f, 0.793);
-      Game::Draw(DrawElement::CharD, -0.1f, 0.793);
-      Game::Draw(DrawElement::CharE, 0.1f, 0.793);
-      Game::Draw(DrawElement::CharF, 0.3f, 0.793);
-      Game::Draw(DrawElement::CharG, 0.5f, 0.793);
-      Game::Draw(DrawElement::CharH, 0.7f, 0.793);
-      Game::Draw(DrawElement::Corner, 0.9f, 0.793);
+      Game::Draw(DrawElement::Corner, -0.791f, 0.791f);
+      Game::Draw(DrawElement::CharA, -0.7f, 0.791f);
+      Game::Draw(DrawElement::CharB, -0.5f, 0.791f);
+      Game::Draw(DrawElement::CharC, -0.3f, 0.791f);
+      Game::Draw(DrawElement::CharD, -0.1f, 0.791f);
+      Game::Draw(DrawElement::CharE, 0.1f, 0.791f);
+      Game::Draw(DrawElement::CharF, 0.3f, 0.791f);
+      Game::Draw(DrawElement::CharG, 0.5f, 0.791f);
+      Game::Draw(DrawElement::CharH, 0.7f, 0.791f);
+      Game::Draw(DrawElement::Corner, 0.9f, 0.791f);
 
       for (int32_t row = 0; row < 8; row++)
       {
-        Game::Draw(static_cast<DrawElement>(row + 2), -0.793f, -0.7f + (0.2f * row));
+        Game::Draw(static_cast<DrawElement>(row + 2), -0.791f, -0.7f + (0.2f * row));
         for (int32_t col = 0; col < 8; col++)
         {
           Game::Draw(((row + col) % 2) ? DrawElement::BlackTile : DrawElement::WhiteTile, -0.7f + (0.2f * col), -0.7f + (0.2f * row));
