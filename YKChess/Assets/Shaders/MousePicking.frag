@@ -1,10 +1,10 @@
 #version 450
 
-layout(location = 0) in flat uint i_ID;
+layout(location = 0) in flat uint inID;
 
-layout(location = 0) out uint o_ID;
+layout(location = 0) out uint outID;
 
 void main() 
 {
-  o_ID = i_ID;
+  outID = inID;
 }

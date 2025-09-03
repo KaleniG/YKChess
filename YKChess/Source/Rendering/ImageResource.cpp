@@ -1,19 +1,27 @@
 #include <YKLib.h>
 
 #include "Rendering/ImageResource.h"
+#include "Rendering/Renderer.h"
 
 namespace yk
 {
-
   const SubTexture& ImageResource::GetSubTexture(uint32_t index) const
   {
     YK_ASSERT(index < m_SubTextures.size(), "Index is out of bounds");
     return m_SubTextures[index];
   }
 
-  std::shared_ptr<ImageResource> ImageResource::Create(const std::filesystem::path& image_filepath, int32_t x_cut_size /*= -1*/, int32_t y_cut_size /*= -1*/)
+  void ImageResource::SetSlot(std::shared_ptr<ImageResource> image, uint32_t slot)
+  {
+    image->m_Slot = slot;
+    Renderer::SetImageSlot(slot, image);
+  }
+
+  std::shared_ptr<ImageResource> ImageResource::Create(const std::filesystem::path& image_filepath, uint32_t slot, int32_t x_cut_size /*= -1*/, int32_t y_cut_size /*= -1*/)
   {
     std::shared_ptr<ImageResource> imageResource = std::make_shared<ImageResource>();
+
+    imageResource->m_Slot = slot;
 
     imageResource->m_Texture = Texture::Create(image_filepath);
 
@@ -52,10 +60,11 @@ namespace yk
           glm::vec2(u0, v1)
         };
 
-        imageResource->m_SubTextures.emplace_back(uv);
+        imageResource->m_SubTextures.emplace_back(uv, slot);
       }
     }
 
+    Renderer::SetImageSlot(slot, imageResource);
     return imageResource;
   }
 }

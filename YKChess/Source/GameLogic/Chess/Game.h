@@ -135,6 +135,7 @@ namespace yk
 
     private:
       std::shared_ptr<ImageResource> m_ChessAtlas;
+      std::shared_ptr<ImageResource> m_ChessBoard;
 
       BoardBitField m_HoveringTile = 0ULL;
       BoardBitField m_SelectedTile = 0ULL;

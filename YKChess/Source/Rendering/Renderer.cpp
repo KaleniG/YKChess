@@ -126,6 +126,7 @@ namespace yk
     DescriptorSetLayoutConfig shaderDescriptorSetLayout;
     shaderDescriptorSetLayout.Add(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT);
     shaderDescriptorSetLayout.Add(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
+    shaderDescriptorSetLayout.Add(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
     Renderer::Get().s_ShaderDescriptorSetLayout = DescriptorSetLayout::Create(shaderDescriptorSetLayout);
     Renderer::Get().s_DescriptorPool = DescriptorPool::Create({ Renderer::Get().s_ShaderDescriptorSetLayout }, true);
 
@@ -160,6 +161,7 @@ namespace yk
       pInputState.AddAttribute(0, VertexInputFormat::VEC3, offsetof(Vertex, Position));
       pInputState.AddAttribute(1, VertexInputFormat::VEC2, offsetof(Vertex, UV));
       pInputState.AddAttribute(2, VertexInputFormat::UINT, offsetof(Vertex, ID));
+      pInputState.AddAttribute(3, VertexInputFormat::UINT, offsetof(Vertex, TexSlot));
 
       PipelineInputAssemblyState pInputAssembly(InputPrimitiveTopology::TriangleList);
 
@@ -283,8 +285,7 @@ namespace yk
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
     {
       DescriptorSetUpdateData basicPipelineUpdateData = {};
-      basicPipelineUpdateData.Write(0, Renderer::Get().s_UniformBuffers[i]);
-      basicPipelineUpdateData.Write(1, image->GetTexture()->GetImage());
+      basicPipelineUpdateData.Write(slot, image->GetTexture()->GetImage());
 
       Renderer::Get().s_PipelineDescriptorSets[i]->Update(basicPipelineUpdateData);
     }
@@ -310,20 +311,19 @@ namespace yk
       vertex.Position = vertices[i] * size + position;
       vertex.UV = subtexture.UVCoordinates[i];
       vertex.ID = id;
+      vertex.TexSlot = subtexture.TextureSlot;
       Renderer::Get().s_VertexBatchVector.push_back(vertex);
     }
 
     std::array<uint32_t, 6> indices =
     {
-    0, 1, 2,
-    2, 3, 0
+      0, 1, 2,
+      2, 3, 0
     };
 
+    Renderer::Get().s_IndexBatchVector.reserve(6);
     for (int i = 0; i < 6; i++)
-    {
-      Renderer::Get().s_IndexBatchVector.reserve(6);
       Renderer::Get().s_IndexBatchVector.emplace_back(indices[i] + (4 * (Renderer::Get().s_ObjectCount - 1)));
-    }
   }
 
   void Renderer::EndBatch()
@@ -407,7 +407,6 @@ namespace yk
 
     ShaderUBO ubo;
     ubo.Projection = projection;
-    ubo.MousePosition = Input::GetMousePosition();
 
     Renderer::Get().s_UniformBuffers[Renderer::Get().s_CurrentFrame]->UpdateData(&ubo);
 

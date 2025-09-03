@@ -33,8 +33,8 @@ namespace yk
     {
       std::shared_ptr<Game> game(new Game());
       game->SetPiecesDefaultPositions();
-      game->m_ChessAtlas = ImageResource::Create("Assets/Textures/ChessAtlas.png", 24, 24);
-      Renderer::SetImageSlot(1, game->m_ChessAtlas);
+      game->m_ChessAtlas = ImageResource::Create("Assets/Textures/ChessAtlas.png", 1, 24, 24);
+      game->m_ChessBoard = ImageResource::Create("Assets/Textures/ChessBoard.png", 2);
       game->DrawGame();
       Renderer::EndBatch();
       Renderer::UpdateMPFramebuffer();
@@ -745,38 +745,15 @@ namespace yk
 
     void Game::DrawGame() const
     {
-      Game::Draw(DrawElement::Corner, -0.791f, -0.9f);
-      Game::Draw(DrawElement::CharA, -0.7f, -0.9f);
-      Game::Draw(DrawElement::CharB, -0.5f, -0.9f);
-      Game::Draw(DrawElement::CharC, -0.3f, -0.9f);
-      Game::Draw(DrawElement::CharD, -0.1f, -0.9f);
-      Game::Draw(DrawElement::CharE, 0.1f, -0.9f);
-      Game::Draw(DrawElement::CharF, 0.3f, -0.9f);
-      Game::Draw(DrawElement::CharG, 0.5f, -0.9f);
-      Game::Draw(DrawElement::CharH, 0.7f, -0.9f);
-      Game::Draw(DrawElement::Corner, 0.9f, -0.9f);
-
-      Game::Draw(DrawElement::Corner, -0.791f, 0.791f);
-      Game::Draw(DrawElement::CharA, -0.7f, 0.791f);
-      Game::Draw(DrawElement::CharB, -0.5f, 0.791f);
-      Game::Draw(DrawElement::CharC, -0.3f, 0.791f);
-      Game::Draw(DrawElement::CharD, -0.1f, 0.791f);
-      Game::Draw(DrawElement::CharE, 0.1f, 0.791f);
-      Game::Draw(DrawElement::CharF, 0.3f, 0.791f);
-      Game::Draw(DrawElement::CharG, 0.5f, 0.791f);
-      Game::Draw(DrawElement::CharH, 0.7f, 0.791f);
-      Game::Draw(DrawElement::Corner, 0.9f, 0.791f);
+      Renderer::DrawImage(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.78f, 1.78f, 1.0f), 0, m_ChessBoard->GetSubTexture(0));
 
       for (int32_t row = 0; row < 8; row++)
       {
-        Game::Draw(static_cast<DrawElement>(row + 2), -0.791f, -0.7f + (0.2f * row));
         for (int32_t col = 0; col < 8; col++)
         {
-          Game::Draw(((row + col) % 2) ? DrawElement::BlackTile : DrawElement::WhiteTile, -0.7f + (0.2f * col), -0.7f + (0.2f * row));
           const auto [piece, side] = Game::AccessTile(row, col);
           Game::Draw(piece, side, row, col);
         }
-        Game::Draw(static_cast<DrawElement>(row + 2), 0.9f, -0.7f + (0.2f * row));
       }
     }
 

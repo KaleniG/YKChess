@@ -11,7 +11,6 @@ namespace yk
   struct alignas(16) ShaderUBO
   {
     glm::mat4 Projection;
-    glm::vec2 MousePosition;
   };
 
   struct alignas(16) Vertex
@@ -19,8 +18,9 @@ namespace yk
     glm::vec3 Position;
     glm::vec2 UV;
     uint32_t ID;
+    uint32_t TexSlot;
 
-    bool operator==(const Vertex& other) const { return Position == other.Position && UV == other.UV && ID == other.ID; }
+    bool operator==(const Vertex& other) const { return Position == other.Position && UV == other.UV && ID == other.ID && TexSlot == other.TexSlot; }
   };
 
 }
