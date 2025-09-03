@@ -524,6 +524,7 @@ namespace yk
       fStructure.AddView(Renderer::Get().s_MousePickingDepthStencilAttachement);
 
       Renderer::Get().s_MousePickingFramebuffer = FrameBuffer::Create(Renderer::Get().s_MousePickingRenderPass, fStructure);
+      Renderer::UpdateMPFramebuffer();
     }
 
 
