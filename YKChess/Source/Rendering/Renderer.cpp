@@ -354,6 +354,9 @@ namespace yk
   {
     YK_ASSERT(Renderer::IsInitialized(), "The renderer hasn't been initialized yet");
 
+    if (position.x > Renderer::Get().s_MousePickingColorAttachement->GetExtent().width || position.y > Renderer::Get().s_MousePickingColorAttachement->GetExtent().height)
+      return 0;
+
     StagingBuffer buffer = StagingBuffer::Create(sizeof(uint32_t));
     VkBufferImageCopy region{};
     region.bufferOffset = 0;
@@ -369,7 +372,7 @@ namespace yk
     Renderer::Get().s_MousePickingColorAttachement->CopyToBuffer(buffer, region);
 
     buffer.Map(sizeof(uint32_t));
-    uint32_t id;
+    uint32_t id = 0;
     buffer.GetData(&id, sizeof(id));
     buffer.Unmap();
 
