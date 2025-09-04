@@ -65,25 +65,6 @@ namespace yk
 
       enum class DrawElement
       {
-        BlackTile,
-        WhiteTile,
-        Num1,
-        Num2,
-        Num3,
-        Num4,
-        Num5,
-        Num6,
-        Num7,
-        Num8,
-        CharA,
-        CharB,
-        CharC,
-        CharD,
-        CharE,
-        CharF,
-        CharG,
-        CharH,
-        Corner,
         HoverTile,
         ActionTile
       };

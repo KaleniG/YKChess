@@ -49,7 +49,7 @@ project "YKChess"
   }
 
   filter { "system:windows" }
-    files { "**.rc", "**.aps", "**.ico", "Assets/**.h" }
+    files { "resource.h", "**.rc", "**.aps", "**.ico" }
 
   filter { "configurations:Debug*" }
     kind "ConsoleApp"

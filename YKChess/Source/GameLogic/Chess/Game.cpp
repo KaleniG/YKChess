@@ -636,25 +636,25 @@ namespace yk
       switch (piece)
       {
       case Game::Piece::Pawn:
-        subTexture = m_ChessAtlas->GetSubTexture((side == Side::Black) ? 9 : 3);
+        subTexture = m_ChessAtlas->GetSubTexture((side == Side::Black) ? 6 : 0);
         break;
       case Game::Piece::Rook:
-        subTexture = m_ChessAtlas->GetSubTexture((side == Side::Black) ? 10 : 4);
+        subTexture = m_ChessAtlas->GetSubTexture((side == Side::Black) ? 7 : 1);
         break;
       case Game::Piece::Knight:
         subTexture = m_ChessAtlas->GetSubTexture((side == Side::Black) ? 8 : 2);
         break;
       case Game::Piece::Bishop:
-        subTexture = m_ChessAtlas->GetSubTexture((side == Side::Black) ? 11 : 5);
+        subTexture = m_ChessAtlas->GetSubTexture((side == Side::Black) ? 9 : 3);
         break;
       case Game::Piece::Queen:
-        subTexture = m_ChessAtlas->GetSubTexture((side == Side::Black) ? 13 : 7);
+        subTexture = m_ChessAtlas->GetSubTexture((side == Side::Black) ? 10 : 4);
         break;
       case Game::Piece::King:
-        subTexture = m_ChessAtlas->GetSubTexture((side == Side::Black) ? 12 : 6);
+        subTexture = m_ChessAtlas->GetSubTexture((side == Side::Black) ? 11 : 5);
         break;
       default:
-        subTexture = m_ChessAtlas->GetSubTexture(37);
+        subTexture = m_ChessAtlas->GetSubTexture(14);
         break;
       }
 
@@ -669,73 +669,16 @@ namespace yk
 
       switch (element)
       {
-      case Game::DrawElement::BlackTile:
-        subTexture = m_ChessAtlas->GetSubTexture(0);
-        break;
-      case Game::DrawElement::WhiteTile:
-        subTexture = m_ChessAtlas->GetSubTexture(1);
-        break;
-      case Game::DrawElement::Num1:
-        subTexture = m_ChessAtlas->GetSubTexture(25);
-        break;
-      case Game::DrawElement::Num2:
-        subTexture = m_ChessAtlas->GetSubTexture(26);
-        break;
-      case Game::DrawElement::Num3:
-        subTexture = m_ChessAtlas->GetSubTexture(27);
-        break;
-      case Game::DrawElement::Num4:
-        subTexture = m_ChessAtlas->GetSubTexture(28);
-        break;
-      case Game::DrawElement::Num5:
-        subTexture = m_ChessAtlas->GetSubTexture(29);
-        break;
-      case Game::DrawElement::Num6:
-        subTexture = m_ChessAtlas->GetSubTexture(30);
-        break;
-      case Game::DrawElement::Num7:
-        subTexture = m_ChessAtlas->GetSubTexture(31);
-        break;
-      case Game::DrawElement::Num8:
-        subTexture = m_ChessAtlas->GetSubTexture(32);
-        break;
-      case Game::DrawElement::CharA:
-        subTexture = m_ChessAtlas->GetSubTexture(16);
-        break;
-      case Game::DrawElement::CharB:
-        subTexture = m_ChessAtlas->GetSubTexture(17);
-        break;
-      case Game::DrawElement::CharC:
-        subTexture = m_ChessAtlas->GetSubTexture(18);
-        break;
-      case Game::DrawElement::CharD:
-        subTexture = m_ChessAtlas->GetSubTexture(19);
-        break;
-      case Game::DrawElement::CharE:
-        subTexture = m_ChessAtlas->GetSubTexture(20);
-        break;
-      case Game::DrawElement::CharF:
-        subTexture = m_ChessAtlas->GetSubTexture(21);
-        break;
-      case Game::DrawElement::CharG:
-        subTexture = m_ChessAtlas->GetSubTexture(22);
-        break;
-      case Game::DrawElement::CharH:
-        subTexture = m_ChessAtlas->GetSubTexture(23);
-        break;
-      case Game::DrawElement::Corner:
-        subTexture = m_ChessAtlas->GetSubTexture(24);
-        break;
       case Game::DrawElement::HoverTile:
-        subTexture = m_ChessAtlas->GetSubTexture(15);
+        subTexture = m_ChessAtlas->GetSubTexture(12);
         break;
       case Game::DrawElement::ActionTile:
-        subTexture = m_ChessAtlas->GetSubTexture(14);
+        subTexture = m_ChessAtlas->GetSubTexture(13);
         break;
       default:
       {
         YK_WARN("Drawing invisible tile");
-        subTexture = m_ChessAtlas->GetSubTexture(37);
+        subTexture = m_ChessAtlas->GetSubTexture(14);
         break;
       }
       }
@@ -885,18 +828,17 @@ namespace yk
                 if (m_GameStatus.WhiteCheck)
                   YK_INFO("Black side has won");
               }
-              else
+
+              if (m_GameStatus.BlackCheck)
               {
-                if (m_GameStatus.BlackCheck)
-                {
-                  auto [rowk, colk] = Game::GetPosition(m_BoardStatus.BlackKing);
-                  Game::Draw(DrawElement::ActionTile, -0.7f + (0.2f * colk), -0.7f + (0.2f * rowk), rowk * 8 + colk + 1);
-                }
-                if (m_GameStatus.WhiteCheck)
-                {
-                  auto [rowk, colk] = Game::GetPosition(m_BoardStatus.WhiteKing);
-                  Game::Draw(DrawElement::ActionTile, -0.7f + (0.2f * colk), -0.7f + (0.2f * rowk), rowk * 8 + colk + 1);
-                }
+                auto [rowk, colk] = Game::GetPosition(m_BoardStatus.BlackKing);
+                Game::Draw(DrawElement::ActionTile, -0.7f + (0.2f * colk), -0.7f + (0.2f * rowk), rowk * 8 + colk + 1);
+              }
+
+              if (m_GameStatus.WhiteCheck)
+              {
+                auto [rowk, colk] = Game::GetPosition(m_BoardStatus.WhiteKing);
+                Game::Draw(DrawElement::ActionTile, -0.7f + (0.2f * colk), -0.7f + (0.2f * rowk), rowk * 8 + colk + 1);
               }
 
               Renderer::EndBatch();
